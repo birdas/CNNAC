@@ -7,14 +7,14 @@ from tensorflow.keras.datasets import mnist
 from tensorflow.keras.models import Model
 from IPython.display import Image, display
 from matplotlib import pyplot as plt
-from scipy.misc import toimage
+from PIL import Image
 
 # The dimensions of our input image
 img_width = 28
 img_height = 28
 # Our target layer: we will visualize the filters from this layer.
 # See `model.summary()` for list of layer names, if you want to change this.
-layer_name = "Conv2D_1"
+layer_name = "Conv2DT_1"
 
 def preprocess(array):
     """
@@ -103,6 +103,7 @@ def visualize_filter(filter_index, feature_extractor):
     for iteration in range(iterations):
         loss, img = gradient_ascent_step(img, filter_index, learning_rate, feature_extractor)
 
+    print(img)
     # Decode the resulting input image
     img = deprocess_image(img[0].numpy())
     return loss, img
@@ -115,7 +116,7 @@ def deprocess_image(img):
     img *= 0.15
 
     # Center crop
-    img = img[25:-25, 25:-25, :]
+    #img = img[25:-25, 25:-25, :]
 
     # Clip to [0, 1]
     img += 0.5
@@ -152,10 +153,12 @@ def main():
     x = layers.Conv2D(32, (3, 3), activation="relu", padding="same", name='Conv2D_2')(x)
     x = layers.MaxPooling2D((2, 2), padding="same")(x)
 
+    # Can't go smaller or else we can't reconstruct back into the correct image size.
+
     # Decoder
-    x = layers.Conv2DTranspose(32, (3, 3), strides=2, activation="relu", padding="same", name='Conv2DT_3')(x)
-    x = layers.Conv2DTranspose(32, (3, 3), strides=2, activation="relu", padding="same", name='Conv2DT_4')(x)
-    x = layers.Conv2D(1, (3, 3), activation="sigmoid", padding="same", name='Conv2D_5')(x)
+    x = layers.Conv2DTranspose(32, (3, 3), strides=2, activation="relu", padding="same", name='Conv2DT_1')(x)
+    x = layers.Conv2DTranspose(32, (3, 3), strides=2, activation="relu", padding="same", name='Conv2DT_2')(x)
+    x = layers.Conv2D(1, (3, 3), activation="sigmoid", padding="same", name='Conv2D_Out')(x)
 
     # Autoencoder
     autoencoder = Model(input, x)
@@ -165,7 +168,7 @@ def main():
     autoencoder.fit(
     x=train_data,
     y=train_data,
-    epochs=5,
+    epochs=1,
     batch_size=128,
     shuffle=True,
     validation_data=(test_data, test_data),
@@ -184,7 +187,14 @@ def main():
     for filter_index in range(32):
         print("Processing filter %d" % (filter_index,))
         loss, img = visualize_filter(filter_index, feature_extractor)
-        toimage(img).show()
+        #print(img)
+
+        w, h = 28, 28
+        data = np.zeros((h, w, 1), dtype=np.uint8)
+        data[0:29, 0:29] = img
+        plt.imshow(data, interpolation='nearest')
+        plt.show()
+
         all_imgs.append(img)
 
     """
