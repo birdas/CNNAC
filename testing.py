@@ -16,7 +16,7 @@ img_width = 28
 img_height = 28
 # Our target layer: we will visualize the filters from this layer.
 # See `model.summary()` for list of layer names, if you want to change this.
-layer_name = "test"
+layer_name = 'Conv2D_1'
 
 def preprocess(array):
     """
@@ -196,15 +196,15 @@ def main():
     input = layers.Input(shape=(28, 28, 1))
 
     # Encoder
-    x = layers.Conv2D(32, (3, 3), activation="relu", padding="same")(input)
+    x = layers.Conv2D(32, (3, 3), activation="relu", padding="same", name='Conv2D_1')(input)
     x = layers.MaxPooling2D((2, 2), padding="same")(x)
-    x = layers.Conv2D(32, (3, 3), activation="relu", padding="same", name='test')(x)
+    x = layers.Conv2D(32, (3, 3), activation="relu", padding="same", name='Conv2D_2')(x)
     x = layers.MaxPooling2D((2, 2), padding="same")(x)
 
     # Decoder
-    x = layers.Conv2DTranspose(32, (3, 3), strides=2, activation="relu", padding="same")(x)
-    x = layers.Conv2DTranspose(32, (3, 3), strides=2, activation="relu", padding="same")(x)
-    x = layers.Conv2D(1, (3, 3), activation="sigmoid", padding="same")(x)
+    x = layers.Conv2DTranspose(32, (3, 3), strides=2, activation="relu", padding="same", name='Conv2DT_1')(x)
+    x = layers.Conv2DTranspose(32, (3, 3), strides=2, activation="relu", padding="same", name='Conv2DT_2')(x)
+    x = layers.Conv2D(1, (3, 3), activation="sigmoid", padding="same", name='Conv2D_out')(x)
 
     # Autoencoder
     autoencoder = Model(input, x)
@@ -225,55 +225,57 @@ def main():
     display1(test_data, predictions)
 
     
+
+    filters, biases = autoencoder.get_layer(name=layer_name).get_weights()
+    # normalize filter values to 0-1 so we can visualize them
+    f_min, f_max = filters.min(), filters.max()
+    filters = (filters - f_min) / (f_max - f_min)
+    # plot first few filters
+    n_filters, ix = 32, 1
+    for i in range(n_filters):
+        # get the filter
+        f = filters[:, :, :, i]
+        # plot each channel separately
+        for j in range(3):
+            # specify subplot and turn of axis
+            ax = plt.subplot(n_filters, 3, ix)
+            ax.set_xticks([])
+            ax.set_yticks([])
+            # plot filter channel in grayscale
+            plt.imshow(f[:, :, j], cmap='gray')
+            ix += 1
+    # show the figure
+    plt.show()
+
+
     layer = autoencoder.get_layer(name=layer_name)
     feature_extractor = Model(inputs=autoencoder.inputs, outputs=layer.output)
 
-    # Compute image inputs that maximize per-filter activations
-    # for the first 32 filters of our target layer
-    all_imgs = []
-    for filter_index in range(32):
-        print("Processing filter %d" % (filter_index,))
-        loss, img = visualize_filter(filter_index, feature_extractor)
-        #print(img)
+    from numpy import expand_dims
 
-        w, h = 28, 28
-        data = np.zeros((h, w, 1), dtype=np.uint8)
-        data[0:29, 0:29] = img
-        plt.imshow(data, interpolation='nearest')
-        plt.savefig('fig' + str(len(all_imgs)) + '.png')
+    model = Model(inputs=autoencoder.inputs, outputs=autoencoder.get_layer(name=layer_name).output)
+    # load the image with the required shape
+    img = test_data[0]
+    # expand dimensions so that it represents a single 'sample'
+    img = expand_dims(img, axis=0)
+    # get feature map for first hidden layerd
+    feature_maps = autoencoder(img, training=False)
+    # plot the output from each block
+    square = 8
+    for fmap in feature_maps:
+        print(fmap)
+        # plot all 64 maps in an 8x8 squares
+        ix = 1
+        for _ in range(square):
+            for _ in range(square):
+                # specify subplot and turn of axis
+                ax = plt.subplot(square, square, ix)
+                ax.set_xticks([])
+                ax.set_yticks([])
+                # plot filter channel in grayscale
+                plt.imshow(fmap[0, :, :, ix-1], cmap='gray')
+                ix += 1
+        # show the figure
         plt.show()
-
-        all_imgs.append(img)
-
-    """
-    # Build a black picture with enough space for
-    # our 3 x 3 filters of size 128 x 128, with a 5px margin in between
-    margin = 6
-    n = 3
-    cropped_width = img_width - 3 * 2
-    cropped_height = img_height - 3 * 2
-    width = n * cropped_width + (n - 1) * margin
-    height = n * cropped_height + (n - 1) * margin
-    print(width, height)
-    stitched_filters = np.zeros((width, height, 1))
-
-    # Fill the picture with our saved filters
-    for i in range(n):
-        for j in range(n):
-            img = all_imgs[i * n + j]
-            stitched_filters[
-                (cropped_width + margin) * i : (cropped_width + margin) * i + cropped_width,
-                (cropped_height + margin) * j : (cropped_height + margin) * j
-                + cropped_height,
-                :,
-            ] = img
-    keras.preprocessing.image.save_img("stiched_filters.png", stitched_filters)
-
-    display(Image("stiched_filters.png"))
-    """
-    
-
-
-
 
 main()
