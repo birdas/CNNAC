@@ -24,7 +24,7 @@ def preprocess(array):
     """
 
     array = array.astype("float32") / 255.0
-    array = np.reshape(array, (len(array), 32, 32, 1))
+    array = np.reshape(array, (len(array), img_height, img_width, 1))
     return array
 
 
@@ -55,13 +55,13 @@ def display1(array1, array2):
     plt.figure(figsize=(20, 4))
     for i, (image1, image2) in enumerate(zip(images1, images2)):
         ax = plt.subplot(2, n, i + 1)
-        plt.imshow(image1.reshape(28, 28))
+        plt.imshow(image1.reshape(img_height, img_width))
         plt.gray()
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
 
         ax = plt.subplot(2, n, i + 1 + n)
-        plt.imshow(image2.reshape(28, 28))
+        plt.imshow(image2.reshape(img_height, img_width))
         plt.gray()
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
@@ -160,20 +160,17 @@ def main():
     test_data = preprocess(test_data)
 
 
-    input = layers.Input(shape=(32, 32, 1))
+    input = layers.Input(shape=(28, 28, 1))
 
     # Encoder
     x = layers.Conv2D(32, (10, 10), activation="relu", padding="same", name='Conv2D_1')(input)
     x = layers.MaxPooling2D((2, 2), padding="same")(x)
     x = layers.Conv2D(32, (10, 10), activation="relu", padding="same", name='Conv2D_2')(x)
     x = layers.MaxPooling2D((2, 2), padding="same")(x)
-    x = layers.Conv2D(32, (10, 10), activation="relu", padding="same", name='Conv2D_3')(x)
-    x = layers.MaxPooling2D((2, 2), padding="same")(x)
 
     # Decoder
     x = layers.Conv2DTranspose(32, (10, 10), strides=2, activation="relu", padding="same", name='Conv2DT_1')(x)
     x = layers.Conv2DTranspose(32, (10, 10), strides=2, activation="relu", padding="same", name='Conv2DT_2')(x)
-    x = layers.Conv2DTranspose(32, (10, 10), strides=2, activation="relu", padding="same", name='Conv2DT_3')(x)
     x = layers.Conv2D(1, (10, 10), activation="sigmoid", padding="same", name='Conv2D_out')(x)
 
     # Autoencoder

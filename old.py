@@ -24,7 +24,7 @@ def preprocess(array):
     """
 
     array = array.astype("float32") / 255.0
-    array = np.reshape(array, (len(array), 512, 512, 1))
+    array = np.reshape(array, (len(array), img_height, img_width, 1))
     return array
 
 
@@ -55,13 +55,13 @@ def display1(array1, array2):
     plt.figure(figsize=(20, 4))
     for i, (image1, image2) in enumerate(zip(images1, images2)):
         ax = plt.subplot(2, n, i + 1)
-        plt.imshow(image1.reshape(512, 512))
+        plt.imshow(image1.reshape(img_height, img_width))
         plt.gray()
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
 
         ax = plt.subplot(2, n, i + 1 + n)
-        plt.imshow(image2.reshape(512, 512))
+        plt.imshow(image2.reshape(img_height, img_width))
         plt.gray()
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
@@ -158,13 +158,13 @@ def load_data(data_dir):
     for file_name in os.listdir(data_dir + 'train/'):
         image_file = os.path.join(data_dir + 'train/', file_name)
         im = np.array(load_img(image_file))
-        im = tf.image.resize(im, size=(512, 512)).numpy()
+        im = tf.image.resize(im, size=(img_height, img_width)).numpy()
         im = tf.image.rgb_to_grayscale(im)
         x.append(im)
     for file_name in os.listdir(data_dir + 'test/'):
         image_file = os.path.join(data_dir + 'test/', file_name)
         im = np.array(load_img(image_file))
-        im = tf.image.resize(im, size=(512, 512)).numpy()
+        im = tf.image.resize(im, size=(img_height, img_width)).numpy()
         im = tf.image.rgb_to_grayscale(im)
         y.append(im)
     x = np.array(x)
