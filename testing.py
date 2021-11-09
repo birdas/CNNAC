@@ -146,32 +146,6 @@ def deprocess_image(img):
     return img
 
 
-def load_data(data_dir):
-    """
-    Load the raw image data into a data matrix, X, and target vector, y.
-
-    :param data_dir: The root directory of the data
-    :return: the data matrix 'x' and target vector 'y'
-    """
-    x = []
-    y = []
-    for file_name in os.listdir(data_dir + 'train/'):
-        image_file = os.path.join(data_dir + 'train/', file_name)
-        im = np.array(load_img(image_file))
-        im = tf.image.resize(im, size=(512, 512)).numpy()
-        im = tf.image.rgb_to_grayscale(im)
-        x.append(im)
-    for file_name in os.listdir(data_dir + 'test/'):
-        image_file = os.path.join(data_dir + 'test/', file_name)
-        im = np.array(load_img(image_file))
-        im = tf.image.resize(im, size=(512, 512)).numpy()
-        im = tf.image.rgb_to_grayscale(im)
-        y.append(im)
-    x = np.array(x)
-    y = np.array(y)
-    return x, y
-
-
 
 def main():
 
@@ -184,13 +158,6 @@ def main():
     # Normalize and reshape the data
     train_data = preprocess(train_data)
     test_data = preprocess(test_data)
-
-    # Create a copy of the data with added noise
-    noisy_train_data = noise(train_data)
-    noisy_test_data = noise(test_data)
-
-    # Display the train data and a version of it with added noise
-    display(train_data, noisy_train_data)
 
 
     input = layers.Input(shape=(32, 32, 1))
