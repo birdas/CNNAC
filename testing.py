@@ -16,7 +16,7 @@ img_width = 28
 img_height = 28
 # Our target layer: we will visualize the filters from this layer.
 # See `model.summary()` for list of layer names, if you want to change this.
-layer_name = 'Conv2D_1'
+layer_name = 'Conv2D_2'
 
 def preprocess(array):
     """
@@ -24,7 +24,7 @@ def preprocess(array):
     """
 
     array = array.astype("float32") / 255.0
-    array = np.reshape(array, (len(array), 28, 28, 1))
+    array = np.reshape(array, (len(array), 32, 32, 1))
     return array
 
 
@@ -193,18 +193,21 @@ def main():
     display(train_data, noisy_train_data)
 
 
-    input = layers.Input(shape=(28, 28, 1))
+    input = layers.Input(shape=(32, 32, 1))
 
     # Encoder
-    x = layers.Conv2D(32, (3, 3), activation="relu", padding="same", name='Conv2D_1')(input)
+    x = layers.Conv2D(32, (10, 10), activation="relu", padding="same", name='Conv2D_1')(input)
     x = layers.MaxPooling2D((2, 2), padding="same")(x)
-    x = layers.Conv2D(32, (3, 3), activation="relu", padding="same", name='Conv2D_2')(x)
+    x = layers.Conv2D(32, (10, 10), activation="relu", padding="same", name='Conv2D_2')(x)
+    x = layers.MaxPooling2D((2, 2), padding="same")(x)
+    x = layers.Conv2D(32, (10, 10), activation="relu", padding="same", name='Conv2D_3')(x)
     x = layers.MaxPooling2D((2, 2), padding="same")(x)
 
     # Decoder
-    x = layers.Conv2DTranspose(32, (3, 3), strides=2, activation="relu", padding="same", name='Conv2DT_1')(x)
-    x = layers.Conv2DTranspose(32, (3, 3), strides=2, activation="relu", padding="same", name='Conv2DT_2')(x)
-    x = layers.Conv2D(1, (3, 3), activation="sigmoid", padding="same", name='Conv2D_out')(x)
+    x = layers.Conv2DTranspose(32, (10, 10), strides=2, activation="relu", padding="same", name='Conv2DT_1')(x)
+    x = layers.Conv2DTranspose(32, (10, 10), strides=2, activation="relu", padding="same", name='Conv2DT_2')(x)
+    x = layers.Conv2DTranspose(32, (10, 10), strides=2, activation="relu", padding="same", name='Conv2DT_3')(x)
+    x = layers.Conv2D(1, (10, 10), activation="sigmoid", padding="same", name='Conv2D_out')(x)
 
     # Autoencoder
     autoencoder = Model(input, x)
@@ -215,7 +218,7 @@ def main():
     autoencoder.fit(
     x=train_data,
     y=train_data,
-    epochs=1,
+    epochs=10,
     batch_size=128,
     shuffle=True,
     validation_data=(test_data, test_data)
@@ -236,14 +239,14 @@ def main():
         # get the filter
         f = filters[:, :, :, i]
         # plot each channel separately
-        for j in range(3):
-            # specify subplot and turn of axis
-            ax = plt.subplot(n_filters, 3, ix)
-            ax.set_xticks([])
-            ax.set_yticks([])
-            # plot filter channel in grayscale
-            plt.imshow(f[:, :, j], cmap='gray')
-            ix += 1
+        #for j in range(3):
+        # specify subplot and turn of axis
+        ax = plt.subplot(n_filters, 3, ix)
+        ax.set_xticks([])
+        ax.set_yticks([])
+        # plot filter channel in grayscale
+        plt.imshow(f[:, :, 0], cmap='gray')
+        ix += 1
     # show the figure
     plt.show()
 
@@ -258,13 +261,13 @@ def main():
     img = test_data[0]
     # expand dimensions so that it represents a single 'sample'
     img = expand_dims(img, axis=0)
-    # get feature map for first hidden layerd
+    # get feature map for first hidden layer
     feature_maps = autoencoder(img, training=False)
     # plot the output from each block
     square = 8
     for fmap in feature_maps:
         print(fmap)
-        # plot all 64 maps in an 8x8 squares
+        # plot all 32 maps in an 8x8 squares
         ix = 1
         for _ in range(square):
             for _ in range(square):
@@ -273,7 +276,7 @@ def main():
                 ax.set_xticks([])
                 ax.set_yticks([])
                 # plot filter channel in grayscale
-                plt.imshow(fmap[0, :, :, ix-1], cmap='gray')
+                plt.imshow(fmap, cmap='gray') #[0, :, :, ix-1]
                 ix += 1
         # show the figure
         plt.show()
