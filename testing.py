@@ -16,7 +16,7 @@ img_width = 28
 img_height = 28
 # Our target layer: we will visualize the filters from this layer.
 # See `model.summary()` for list of layer names, if you want to change this.
-layer_name = 'Conv2D_2'
+layer_name = 'Conv2D_1'
 
 def preprocess(array):
     """
@@ -163,15 +163,15 @@ def main():
     input = layers.Input(shape=(28, 28, 1))
 
     # Encoder
-    x = layers.Conv2D(32, (10, 10), activation="relu", padding="same", name='Conv2D_1')(input)
+    x = layers.Conv2D(32, (3, 3), activation="relu", padding="same", name='Conv2D_1')(input)
     x = layers.MaxPooling2D((2, 2), padding="same")(x)
-    x = layers.Conv2D(32, (10, 10), activation="relu", padding="same", name='Conv2D_2')(x)
+    x = layers.Conv2D(32, (3, 3), activation="relu", padding="same", name='Conv2D_2')(x)
     x = layers.MaxPooling2D((2, 2), padding="same")(x)
 
     # Decoder
-    x = layers.Conv2DTranspose(32, (10, 10), strides=2, activation="relu", padding="same", name='Conv2DT_1')(x)
-    x = layers.Conv2DTranspose(32, (10, 10), strides=2, activation="relu", padding="same", name='Conv2DT_2')(x)
-    x = layers.Conv2D(1, (10, 10), activation="sigmoid", padding="same", name='Conv2D_out')(x)
+    x = layers.Conv2DTranspose(32, (3, 3), strides=2, activation="relu", padding="same", name='Conv2DT_1')(x)
+    x = layers.Conv2DTranspose(32, (3, 3), strides=2, activation="relu", padding="same", name='Conv2DT_2')(x)
+    x = layers.Conv2D(1, (3, 3), activation="sigmoid", padding="same", name='Conv2D_out')(x)
 
     # Autoencoder
     autoencoder = Model(input, x)
@@ -182,7 +182,7 @@ def main():
     autoencoder.fit(
     x=train_data,
     y=train_data,
-    epochs=1,
+    epochs=5,
     batch_size=128,
     shuffle=True,
     validation_data=(test_data, test_data)
@@ -214,7 +214,7 @@ def main():
         plt.imshow(f[:, :, 0], cmap='gray')
         ix += 1
     # show the figure
-    plt.savefig('images/testing/filters.png')
+    plt.savefig('images/testing/filters_3.png')
     plt.show()
 
 
@@ -247,7 +247,7 @@ def main():
                 plt.imshow(fmap, cmap='gray') #[0, :, :, ix-1]
                 ix += 1
         # show the figure
-        plt.savefig('images/testing/feature_map' + str(num) + '.png')
+        plt.savefig('images/testing/feature_map_3.png')
         plt.show()
         num += 1
 
