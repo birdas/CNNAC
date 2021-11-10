@@ -182,14 +182,15 @@ def main():
     autoencoder.fit(
     x=train_data,
     y=train_data,
-    epochs=10,
+    epochs=1,
     batch_size=128,
     shuffle=True,
     validation_data=(test_data, test_data)
     )
 
+    autoencoder.save('test.h5')
     predictions = autoencoder.predict(test_data)
-    display1(test_data, predictions)
+    #display1(test_data, predictions)
 
     
 
@@ -208,10 +209,12 @@ def main():
         ax = plt.subplot(n_filters, 3, ix)
         ax.set_xticks([])
         ax.set_yticks([])
+        #plt.figure(figsize=(2, 2))
         # plot filter channel in grayscale
         plt.imshow(f[:, :, 0], cmap='gray')
         ix += 1
     # show the figure
+    plt.savefig('images/testing/filters.png')
     plt.show()
 
 
@@ -229,6 +232,7 @@ def main():
     feature_maps = autoencoder(img, training=False)
     # plot the output from each block
     square = 8
+    num = 0
     for fmap in feature_maps:
         print(fmap)
         # plot all 32 maps in an 8x8 squares
@@ -243,6 +247,8 @@ def main():
                 plt.imshow(fmap, cmap='gray') #[0, :, :, ix-1]
                 ix += 1
         # show the figure
+        plt.savefig('images/testing/feature_map' + str(num) + '.png')
         plt.show()
+        num += 1
 
 main()
