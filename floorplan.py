@@ -12,11 +12,11 @@ from matplotlib import pyplot as plt
 from PIL import Image
 
 # The dimensions of our input image
-img_width = 28
-img_height = 28
+img_width = 512
+img_height = 512
 # Our target layer: we will visualize the filters from this layer.
 # See `model.summary()` for list of layer names, if you want to change this.
-layer_name = 'Conv2D_1'
+layer_name = 'Conv2D_2'
 
 def preprocess(array):
     """
@@ -146,6 +146,32 @@ def deprocess_image(img):
     return img
 
 
+def load_data(data_dir):
+    """
+    Load the raw image data into a data matrix, X, and target vector, y.
+
+    :param data_dir: The root directory of the data
+    :return: the data matrix 'x' and target vector 'y'
+    """
+    x = []
+    y = []
+    for file_name in os.listdir(data_dir + 'train/'):
+        image_file = os.path.join(data_dir + 'train/', file_name)
+        im = np.array(load_img(image_file))
+        im = tf.image.resize(im, size=(img_height, img_width)).numpy()
+        im = tf.image.rgb_to_grayscale(im)
+        x.append(im)
+    for file_name in os.listdir(data_dir + 'test/'):
+        image_file = os.path.join(data_dir + 'test/', file_name)
+        im = np.array(load_img(image_file))
+        im = tf.image.resize(im, size=(img_height, img_width)).numpy()
+        im = tf.image.rgb_to_grayscale(im)
+        y.append(im)
+    x = np.array(x)
+    y = np.array(y)
+    return x, y
+
+
 
 def main():
 
@@ -153,25 +179,28 @@ def main():
     # won't use the labels.
     # Since we only need images from the dataset to encode and decode, we
     # won't use the labels.
-    (train_data, _), (test_data, _) = mnist.load_data()
+    (train_data, _), (test_data, _) = load_data()
 
     # Normalize and reshape the data
     train_data = preprocess(train_data)
     test_data = preprocess(test_data)
 
 
-    input = layers.Input(shape=(28, 28, 1))
+    input = layers.Input(shape=(512, 512, 1))
 
     # Encoder
-    x = layers.Conv2D(32, (5, 5), activation="relu", padding="same", name='Conv2D_1')(input)
+    x = layers.Conv2D(32, (10, 10), activation="relu", padding="same", name='Conv2D_1')(input)
     x = layers.MaxPooling2D((2, 2), padding="same")(x)
-    x = layers.Conv2D(32, (5, 5), activation="relu", padding="same", name='Conv2D_2')(x)
+    x = layers.Conv2D(32, (10, 10), activation="relu", padding="same", name='Conv2D_2')(x)
+    x = layers.MaxPooling2D((2, 2), padding="same")(x)
+    x = layers.Conv2D(32, (10, 10), activation="relu", padding="same", name='Conv2D_3')(x)
     x = layers.MaxPooling2D((2, 2), padding="same")(x)
 
     # Decoder
-    x = layers.Conv2DTranspose(32, (5, 5), strides=2, activation="relu", padding="same", name='Conv2DT_1')(x)
-    x = layers.Conv2DTranspose(32, (5, 5), strides=2, activation="relu", padding="same", name='Conv2DT_2')(x)
-    x = layers.Conv2D(1, (5, 5), activation="sigmoid", padding="same", name='Conv2D_out')(x)
+    x = layers.Conv2DTranspose(32, (10, 10), strides=2, activation="relu", padding="same", name='Conv2DT_1')(x)
+    x = layers.Conv2DTranspose(32, (10, 10), strides=2, activation="relu", padding="same", name='Conv2DT_2')(x)
+    x = layers.Conv2DTranspose(32, (10, 10), strides=2, activation="relu", padding="same", name='Conv2DT_3')(x)
+    x = layers.Conv2D(1, (10, 10), activation="sigmoid", padding="same", name='Conv2D_out')(x)
 
     # Autoencoder
     autoencoder = Model(input, x)
@@ -182,18 +211,17 @@ def main():
     autoencoder.fit(
     x=train_data,
     y=train_data,
-    epochs=5,
+    epochs=10,
     batch_size=128,
     shuffle=True,
     validation_data=(test_data, test_data)
     )
 
-    autoencoder.save('test.h5')
     predictions = autoencoder.predict(test_data)
-    #display1(test_data, predictions)
+    display1(test_data, predictions)
 
     
-    """
+
     filters, biases = autoencoder.get_layer(name=layer_name).get_weights()
     # normalize filter values to 0-1 so we can visualize them
     f_min, f_max = filters.min(), filters.max()
@@ -209,16 +237,18 @@ def main():
         ax = plt.subplot(n_filters, 3, ix)
         ax.set_xticks([])
         ax.set_yticks([])
-        #plt.figure(figsize=(2, 2))
         # plot filter channel in grayscale
         plt.imshow(f[:, :, 0], cmap='gray')
         ix += 1
     # show the figure
-    plt.savefig('images/testing/filters_10.png')
     plt.show()
 
 
+    layer = autoencoder.get_layer(name=layer_name)
+    feature_extractor = Model(inputs=autoencoder.inputs, outputs=layer.output)
+
     from numpy import expand_dims
+
     model = Model(inputs=autoencoder.inputs, outputs=autoencoder.get_layer(name=layer_name).output)
     # load the image with the required shape
     img = test_data[0]
@@ -228,7 +258,6 @@ def main():
     feature_maps = autoencoder(img, training=False)
     # plot the output from each block
     square = 8
-    num = 0
     for fmap in feature_maps:
         print(fmap)
         # plot all 32 maps in an 8x8 squares
@@ -243,31 +272,6 @@ def main():
                 plt.imshow(fmap, cmap='gray') #[0, :, :, ix-1]
                 ix += 1
         # show the figure
-        plt.savefig('images/testing/feature_map_10.png')
         plt.show()
-        num += 1
-    """
-
-    layer = autoencoder.get_layer(name=layer_name)
-    feature_extractor = Model(inputs=autoencoder.inputs, outputs=layer.output)
-
-    # Compute image inputs that maximize per-filter activations
-    # for the first 32 filters of our target layer
-    all_imgs = []
-    i = 0
-    for filter_index in range(32):
-        print("Processing filter %d" % (filter_index,))
-        loss, img = visualize_filter(filter_index, feature_extractor)
-        #print(img)
-
-        w, h = 28, 28
-        data = np.zeros((h, w, 1), dtype=np.uint8)
-        data[0:29, 0:29] = img
-        plt.imshow(data, interpolation='nearest')
-        plt.savefig('images/testing/activation_maps_5/' + str(i) + '.png')
-        plt.show()
-
-        i += 1
-        all_imgs.append(img)
 
 main()
