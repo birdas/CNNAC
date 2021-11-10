@@ -193,7 +193,7 @@ def main():
     #display1(test_data, predictions)
 
     
-
+    """
     filters, biases = autoencoder.get_layer(name=layer_name).get_weights()
     # normalize filter values to 0-1 so we can visualize them
     f_min, f_max = filters.min(), filters.max()
@@ -214,15 +214,11 @@ def main():
         plt.imshow(f[:, :, 0], cmap='gray')
         ix += 1
     # show the figure
-    plt.savefig('images/testing/filters_3.png')
+    plt.savefig('images/testing/filters_10.png')
     plt.show()
 
 
-    layer = autoencoder.get_layer(name=layer_name)
-    feature_extractor = Model(inputs=autoencoder.inputs, outputs=layer.output)
-
     from numpy import expand_dims
-
     model = Model(inputs=autoencoder.inputs, outputs=autoencoder.get_layer(name=layer_name).output)
     # load the image with the required shape
     img = test_data[0]
@@ -247,8 +243,31 @@ def main():
                 plt.imshow(fmap, cmap='gray') #[0, :, :, ix-1]
                 ix += 1
         # show the figure
-        plt.savefig('images/testing/feature_map_3.png')
+        plt.savefig('images/testing/feature_map_10.png')
         plt.show()
         num += 1
+    """
+
+    layer = autoencoder.get_layer(name=layer_name)
+    feature_extractor = Model(inputs=autoencoder.inputs, outputs=layer.output)
+
+    # Compute image inputs that maximize per-filter activations
+    # for the first 32 filters of our target layer
+    all_imgs = []
+    i = 0
+    for filter_index in range(32):
+        print("Processing filter %d" % (filter_index,))
+        loss, img = visualize_filter(filter_index, feature_extractor)
+        #print(img)
+
+        w, h = 28, 28
+        data = np.zeros((h, w, 1), dtype=np.uint8)
+        data[0:29, 0:29] = img
+        plt.imshow(data, interpolation='nearest')
+        plt.savefig('images/testing/activation_maps_3/' + str(i) + '.png')
+        plt.show()
+
+        i += 1
+        all_imgs.append(img)
 
 main()
