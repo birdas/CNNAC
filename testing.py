@@ -111,14 +111,14 @@ def visualize_filter(filter_index, feature_extractor):
     """
     Visualize filter a specific filter in a convolutional layer
     """
-    # We run gradient ascent for 20 steps
-    iterations = 30
-    learning_rate = 10.0
+    # We run gradient ascent for 30 steps
+    iterations = 25000
+    learning_rate = 1.0
     img = initialize_image()
     for iteration in range(iterations):
         loss, img = gradient_ascent_step(img, filter_index, learning_rate, feature_extractor)
 
-    print(img)
+    #print(img)
     # Decode the resulting input image
     img = deprocess_image(img[0].numpy())
     return loss, img
@@ -159,19 +159,21 @@ def main():
     train_data = preprocess(train_data)
     test_data = preprocess(test_data)
 
+    train_data = [test_data[0]]
+
 
     input = layers.Input(shape=(28, 28, 1))
 
     # Encoder
-    x = layers.Conv2D(32, (5, 5), activation="relu", padding="same", name='Conv2D_1')(input)
+    x = layers.Conv2D(32, (3, 3), activation="relu", padding="same", name='Conv2D_1')(input)
     x = layers.MaxPooling2D((2, 2), padding="same")(x)
-    x = layers.Conv2D(32, (5, 5), activation="relu", padding="same", name='Conv2D_2')(x)
+    x = layers.Conv2D(32, (3, 3), activation="relu", padding="same", name='Conv2D_2')(x)
     x = layers.MaxPooling2D((2, 2), padding="same")(x)
 
     # Decoder
-    x = layers.Conv2DTranspose(32, (5, 5), strides=2, activation="relu", padding="same", name='Conv2DT_1')(x)
-    x = layers.Conv2DTranspose(32, (5, 5), strides=2, activation="relu", padding="same", name='Conv2DT_2')(x)
-    x = layers.Conv2D(1, (5, 5), activation="sigmoid", padding="same", name='Conv2D_out')(x)
+    x = layers.Conv2DTranspose(32, (3, 3), strides=2, activation="relu", padding="same", name='Conv2DT_1')(x)
+    x = layers.Conv2DTranspose(32, (3, 3), strides=2, activation="relu", padding="same", name='Conv2DT_2')(x)
+    x = layers.Conv2D(1, (3, 3), activation="sigmoid", padding="same", name='Conv2D_out')(x)
 
     # Autoencoder
     autoencoder = Model(input, x)
@@ -182,18 +184,18 @@ def main():
     autoencoder.fit(
     x=train_data,
     y=train_data,
-    epochs=5,
+    epochs=100,
     batch_size=128,
     shuffle=True,
-    validation_data=(test_data, test_data)
+    validation_data=(train_data, train_data)
     )
 
-    autoencoder.save('test.h5')
-    predictions = autoencoder.predict(test_data)
+    autoencoder.save('seven.h5')
+    #predictions = autoencoder.predict(test_data)
     #display1(test_data, predictions)
 
     
-    """
+    
     filters, biases = autoencoder.get_layer(name=layer_name).get_weights()
     # normalize filter values to 0-1 so we can visualize them
     f_min, f_max = filters.min(), filters.max()
@@ -214,9 +216,9 @@ def main():
         plt.imshow(f[:, :, 0], cmap='gray')
         ix += 1
     # show the figure
-    plt.savefig('images/testing/filters_10.png')
+    plt.savefig('images/seven/filters_3.png')
     plt.show()
-
+    
 
     from numpy import expand_dims
     model = Model(inputs=autoencoder.inputs, outputs=autoencoder.get_layer(name=layer_name).output)
@@ -225,29 +227,26 @@ def main():
     # expand dimensions so that it represents a single 'sample'
     img = expand_dims(img, axis=0)
     # get feature map for first hidden layer
-    feature_maps = autoencoder(img, training=False)
+    feature_maps = model(img, training=False)
     # plot the output from each block
     square = 8
-    num = 0
-    for fmap in feature_maps:
-        print(fmap)
-        # plot all 32 maps in an 8x8 squares
-        ix = 1
+    # plot all 32 outputs in an 8x8 squares
+    ix = 1
+    for _ in range(square):
         for _ in range(square):
-            for _ in range(square):
+            if ix <= 32:
                 # specify subplot and turn of axis
                 ax = plt.subplot(square, square, ix)
                 ax.set_xticks([])
                 ax.set_yticks([])
                 # plot filter channel in grayscale
-                plt.imshow(fmap, cmap='gray') #[0, :, :, ix-1]
+                plt.imshow(feature_maps[0, :, :, ix-1], cmap='gray') #[0, :, :, ix-1]
                 ix += 1
-        # show the figure
-        plt.savefig('images/testing/feature_map_10.png')
-        plt.show()
-        num += 1
-    """
-
+    # show the figure
+    plt.savefig('images/seven/output_map_3.png')
+    plt.show()
+    
+    
     layer = autoencoder.get_layer(name=layer_name)
     feature_extractor = Model(inputs=autoencoder.inputs, outputs=layer.output)
 
@@ -264,10 +263,11 @@ def main():
         data = np.zeros((h, w, 1), dtype=np.uint8)
         data[0:29, 0:29] = img
         plt.imshow(data, interpolation='nearest')
-        plt.savefig('images/testing/activation_maps_5/' + str(i) + '.png')
-        plt.show()
+        plt.savefig('images/seven/activation_maps_3/' + str(i) + '.png')
+        #plt.show()
 
         i += 1
         all_imgs.append(img)
+    
 
 main()
