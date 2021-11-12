@@ -8,7 +8,8 @@ from tensorflow.keras.datasets import mnist
 from tensorflow.keras.models import Model
 from tensorflow.keras.preprocessing.image import load_img
 from IPython.display import Image, display
-from matplotlib import pyplot as plt
+import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 from PIL import Image
 
 # The dimensions of our input image
@@ -163,9 +164,9 @@ def main():
 
     # Since we only need images from the dataset to encode and decode, we
     # won't use the labels.
-    #(train_data, _), (test_data, _) = mnist.load_data()
-    train_data = load_image_data('data/square.png')
-    test_data = train_data
+    (train_data, _), (test_data, _) = mnist.load_data()
+    #train_data = load_image_data('data/t_shape.png')
+    #test_data = train_data
 
     # Normalize and reshape the data
     train_data = preprocess(train_data)
@@ -173,19 +174,20 @@ def main():
 
     train_data = [test_data[0]]
 
-
+    #TODO How important is each kernel
+    #Grab a filter and set it to zero? Then measure error delta?
     input = layers.Input(shape=(28, 28, 1))
 
     # Encoder
-    x = layers.Conv2D(32, (10, 10), activation="relu", padding="same", name='Conv2D_1')(input)
+    x = layers.Conv2D(32, (3, 3), activation="relu", padding="same", name='Conv2D_1')(input)
     x = layers.MaxPooling2D((2, 2), padding="same")(x)
-    x = layers.Conv2D(32, (10, 10), activation="relu", padding="same", name='Conv2D_2')(x)
+    x = layers.Conv2D(32, (3, 3), activation="relu", padding="same", name='Conv2D_2')(x)
     x = layers.MaxPooling2D((2, 2), padding="same")(x)
 
     # Decoder
-    x = layers.Conv2DTranspose(32, (10, 10), strides=2, activation="relu", padding="same", name='Conv2DT_1')(x)
-    x = layers.Conv2DTranspose(32, (10, 10), strides=2, activation="relu", padding="same", name='Conv2DT_2')(x)
-    x = layers.Conv2D(1, (10, 10), activation="sigmoid", padding="same", name='Conv2D_out')(x)
+    x = layers.Conv2DTranspose(32, (3, 3), strides=2, activation="relu", padding="same", name='Conv2DT_1')(x)
+    x = layers.Conv2DTranspose(32, (3, 3), strides=2, activation="relu", padding="same", name='Conv2DT_2')(x)
+    x = layers.Conv2D(1, (3, 3), activation="sigmoid", padding="same", name='Conv2D_out')(x)
 
     # Autoencoder
     autoencoder = Model(input, x)
@@ -228,8 +230,9 @@ def main():
         plt.imshow(f[:, :, 0], cmap='gray')
         ix += 1
     # show the figure
-    plt.savefig('images/small_shapes/filters_10.png')
-    plt.show()
+    plt.savefig('images/seven/filters_3.png')
+    plt.clf()
+    #plt.show()
     
 
     from numpy import expand_dims
@@ -255,8 +258,9 @@ def main():
                 plt.imshow(feature_maps[0, :, :, ix-1], cmap='gray') #[0, :, :, ix-1]
                 ix += 1
     # show the figure
-    plt.savefig('images/small_shapes/output_map_10.png')
-    plt.show()
+    plt.savefig('images/seven/output_map_3.png')
+    plt.clf()
+    #plt.show()
     
     
     layer = autoencoder.get_layer(name=layer_name)
@@ -274,8 +278,13 @@ def main():
         w, h = 28, 28
         data = np.zeros((h, w, 1), dtype=np.uint8)
         data[0:29, 0:29] = img
-        plt.imshow(data, interpolation='nearest')
-        plt.savefig('images/small_shapes/activation_maps_10/' + str(i) + '.png')
+        ax = plt.subplot()
+        im = ax.imshow(data, interpolation='nearest')
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        plt.colorbar(im, cax=cax)
+        plt.savefig('images/seven/activation_maps_3/' + str(i) + '.png')
+        plt.clf()
         #plt.show()
 
 
