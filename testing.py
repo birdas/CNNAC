@@ -146,14 +146,26 @@ def deprocess_image(img):
     return img
 
 
+def load_image_data(image_path):
+    """ 
+    Load the raw image data into a data matrix and target vector.
+    """
+    x = []
+    im = np.array(load_img(image_path))
+    im = tf.image.resize(im, size=(img_height, img_width)).numpy()
+    im = tf.image.rgb_to_grayscale(im)
+    x.append(im)
+    x = np.array(x)
+    return x
+
 
 def main():
 
     # Since we only need images from the dataset to encode and decode, we
     # won't use the labels.
-    # Since we only need images from the dataset to encode and decode, we
-    # won't use the labels.
-    (train_data, _), (test_data, _) = mnist.load_data()
+    #(train_data, _), (test_data, _) = mnist.load_data()
+    train_data = load_image_data('data/square.png')
+    test_data = train_data
 
     # Normalize and reshape the data
     train_data = preprocess(train_data)
@@ -165,15 +177,15 @@ def main():
     input = layers.Input(shape=(28, 28, 1))
 
     # Encoder
-    x = layers.Conv2D(32, (3, 3), activation="relu", padding="same", name='Conv2D_1')(input)
+    x = layers.Conv2D(32, (10, 10), activation="relu", padding="same", name='Conv2D_1')(input)
     x = layers.MaxPooling2D((2, 2), padding="same")(x)
-    x = layers.Conv2D(32, (3, 3), activation="relu", padding="same", name='Conv2D_2')(x)
+    x = layers.Conv2D(32, (10, 10), activation="relu", padding="same", name='Conv2D_2')(x)
     x = layers.MaxPooling2D((2, 2), padding="same")(x)
 
     # Decoder
-    x = layers.Conv2DTranspose(32, (3, 3), strides=2, activation="relu", padding="same", name='Conv2DT_1')(x)
-    x = layers.Conv2DTranspose(32, (3, 3), strides=2, activation="relu", padding="same", name='Conv2DT_2')(x)
-    x = layers.Conv2D(1, (3, 3), activation="sigmoid", padding="same", name='Conv2D_out')(x)
+    x = layers.Conv2DTranspose(32, (10, 10), strides=2, activation="relu", padding="same", name='Conv2DT_1')(x)
+    x = layers.Conv2DTranspose(32, (10, 10), strides=2, activation="relu", padding="same", name='Conv2DT_2')(x)
+    x = layers.Conv2D(1, (10, 10), activation="sigmoid", padding="same", name='Conv2D_out')(x)
 
     # Autoencoder
     autoencoder = Model(input, x)
@@ -190,7 +202,7 @@ def main():
     validation_data=(train_data, train_data)
     )
 
-    autoencoder.save('seven.h5')
+    autoencoder.save('small_shapes.h5')
     #predictions = autoencoder.predict(test_data)
     #display1(test_data, predictions)
 
@@ -216,7 +228,7 @@ def main():
         plt.imshow(f[:, :, 0], cmap='gray')
         ix += 1
     # show the figure
-    plt.savefig('images/seven/filters_3.png')
+    plt.savefig('images/small_shapes/filters_10.png')
     plt.show()
     
 
@@ -243,7 +255,7 @@ def main():
                 plt.imshow(feature_maps[0, :, :, ix-1], cmap='gray') #[0, :, :, ix-1]
                 ix += 1
     # show the figure
-    plt.savefig('images/seven/output_map_3.png')
+    plt.savefig('images/small_shapes/output_map_10.png')
     plt.show()
     
     
@@ -263,8 +275,8 @@ def main():
         data = np.zeros((h, w, 1), dtype=np.uint8)
         data[0:29, 0:29] = img
         plt.imshow(data, interpolation='nearest')
-        plt.savefig('images/small_shapes/activation_maps_3/' + str(i) + '.png')
-        plt.show()
+        plt.savefig('images/small_shapes/activation_maps_10/' + str(i) + '.png')
+        #plt.show()
 
 
         i += 1
