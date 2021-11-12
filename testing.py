@@ -264,7 +264,7 @@ def main():
         data = np.zeros((h, w, 1), dtype=np.uint8)
         data[0:29, 0:29] = img
         plt.imshow(data, interpolation='nearest')
-        plt.savefig('images/testing/activation_maps_5/' + str(i) + '.png')
+        plt.savefig('images/small_shapes/activation_maps_3/' + str(i) + '.png')
         plt.show()
 
         i += 1
