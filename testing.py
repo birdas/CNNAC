@@ -165,7 +165,7 @@ def main():
     # Since we only need images from the dataset to encode and decode, we
     # won't use the labels.
     #(train_data, _), (test_data, _) = mnist.load_data()
-    train_data = load_image_data('data/square.png')
+    train_data = load_image_data('data/two_lines.png')
     print(np.shape(train_data))
     test_data = train_data
 
@@ -180,15 +180,15 @@ def main():
     input = layers.Input(shape=(28, 28, 1))
 
     # Encoder
-    x = layers.Conv2D(6, (10, 10), activation="relu", padding="same", name='Conv2D_1')(input)
-    #x = layers.MaxPooling2D((2, 2), padding="same")(x)
-    #x = layers.Conv2D(32, (10, 10), activation="relu", padding="same", name='Conv2D_2')(x)
-    #x = layers.MaxPooling2D((2, 2), padding="same")(x)
+    x = layers.Conv2D(6, (3, 3), activation="relu", padding="same", name='Conv2D_1')(input)
+    x = layers.MaxPooling2D((2, 2), padding="same")(x)
+    x = layers.Conv2D(32, (3, 3), activation="relu", padding="same", name='Conv2D_2')(x)
+    x = layers.MaxPooling2D((2, 2), padding="same")(x)
 
     # Decoder
-    #x = layers.Conv2DTranspose(32, (10, 10), strides=2, activation="relu", padding="same", name='Conv2DT_1')(x)
-    #x = layers.Conv2DTranspose(32, (10, 10), strides=2, activation="relu", padding="same", name='Conv2DT_2')(x)
-    x = layers.Conv2D(1, (10, 10), activation="sigmoid", padding="same", name='Conv2D_out')(x)
+    x = layers.Conv2DTranspose(32, (3, 3), strides=2, activation="relu", padding="same", name='Conv2DT_1')(x)
+    x = layers.Conv2DTranspose(32, (3, 3), strides=2, activation="relu", padding="same", name='Conv2DT_2')(x)
+    x = layers.Conv2D(1, (3, 3), activation="sigmoid", padding="same", name='Conv2D_out')(x)
 
     # Autoencoder
     autoencoder = Model(input, x)
@@ -252,7 +252,7 @@ def main():
         plt.imshow(f[:, :, 0], cmap='gray')
         ix += 1
     # show the figure
-    plt.savefig('less_filter_less_layers_images/small_shapes/square/filters_10.png')
+    plt.savefig('less_filter_images/small_shapes/two_lines/filters_3.png')
     #plt.show()
     plt.clf()
     
@@ -280,7 +280,7 @@ def main():
                 plt.imshow(feature_maps[0, :, :, ix-1], cmap='gray') #[0, :, :, ix-1]
                 ix += 1
     # show the figure
-    plt.savefig('less_filter_less_layers_images/small_shapes/square/output_map_10.png')
+    plt.savefig('less_filter_images/small_shapes/two_lines/output_map_3.png')
     #plt.show()
     plt.clf()
     
@@ -305,7 +305,7 @@ def main():
         divider = make_axes_locatable(ax)
         cax = divider.append_axes("right", size="5%", pad=0.05)
         plt.colorbar(im, cax=cax)
-        plt.savefig('less_filter_less_layers_images/small_shapes/square/activation_maps_10/' + str(i) + '.png')
+        plt.savefig('less_filter_images/small_shapes/two_lines/activation_maps_3/' + str(i) + '.png')
         #plt.show()
         plt.clf()
 
