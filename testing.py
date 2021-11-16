@@ -181,13 +181,13 @@ def main():
 
     # Encoder
     x = layers.Conv2D(32, (5, 5), activation="relu", padding="same", name='Conv2D_1')(input)
-    x = layers.MaxPooling2D((2, 2), padding="same")(x)
-    x = layers.Conv2D(32, (5, 5), activation="relu", padding="same", name='Conv2D_2')(x)
-    x = layers.MaxPooling2D((2, 2), padding="same")(x)
+    #x = layers.MaxPooling2D((2, 2), padding="same")(x)
+    #x = layers.Conv2D(32, (5, 5), activation="relu", padding="same", name='Conv2D_2')(x)
+    #x = layers.MaxPooling2D((2, 2), padding="same")(x)
 
     # Decoder
-    x = layers.Conv2DTranspose(32, (5, 5), strides=2, activation="relu", padding="same", name='Conv2DT_1')(x)
-    x = layers.Conv2DTranspose(32, (5, 5), strides=2, activation="relu", padding="same", name='Conv2DT_2')(x)
+    #x = layers.Conv2DTranspose(32, (5, 5), strides=2, activation="relu", padding="same", name='Conv2DT_1')(x)
+    #x = layers.Conv2DTranspose(32, (5, 5), strides=2, activation="relu", padding="same", name='Conv2DT_2')(x)
     x = layers.Conv2D(1, (5, 5), activation="sigmoid", padding="same", name='Conv2D_out')(x)
 
     # Autoencoder
@@ -199,26 +199,27 @@ def main():
     autoencoder.fit(
     x=train_data,
     y=train_data,
-    epochs=100,
+    epochs=30,
     batch_size=128,
     shuffle=True,
     validation_data=(train_data, train_data)
     )
 
-    autoencoder.save('small_shapes.h5')
+    #autoencoder.save('small_shapes.h5')
     #predictions = autoencoder.predict(test_data)
     #display1(test_data, predictions)
 
     
-    filters, biases = autoencoder.get_layer(name=layer_name).get_weights()
+    
     #print(np.shape(filters))
     for i in range(32):
+        filters, biases = autoencoder.get_layer(name=layer_name).get_weights()
         test_model = autoencoder
         test_filters = filters
-        test_filters[:, :, :, i] = np.reshape([0] * 25, (5, 5, 1))
+        test_filters[:, :, :, i] = np.reshape([0.0] * 25, (5, 5, 1))
         test_biases = biases
         #print(np.shape(test_biases))
-        test_biases[i] = 0
+        test_biases[i] = 0.0
         #print(np.shape(test_filters))
         #print(test_filters[:, :, :, i])
         test_model.get_layer(name=layer_name).set_weights([test_filters, test_biases])
@@ -226,7 +227,10 @@ def main():
         img1 = autoencoder(test_data, training=False)
         img2 = test_model(test_data, training=False)
 
-        Y = np.square(np.subtract(img1,img1)).mean()
+        #print(img1)
+        #print(img2)
+
+        Y = float(np.square(np.subtract(img1,img2)).mean())
         print('MSE without filer ' + str(i) + ':', Y)
     
 
