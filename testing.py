@@ -180,15 +180,15 @@ def main():
     input = layers.Input(shape=(28, 28, 1))
 
     # Encoder
-    x = layers.Conv2D(32, (5, 5), activation="relu", padding="same", name='Conv2D_1')(input)
-    #x = layers.MaxPooling2D((2, 2), padding="same")(x)
-    #x = layers.Conv2D(32, (5, 5), activation="relu", padding="same", name='Conv2D_2')(x)
-    #x = layers.MaxPooling2D((2, 2), padding="same")(x)
+    x = layers.Conv2D(6, (3, 3), activation="relu", padding="same", name='Conv2D_1')(input)
+    x = layers.MaxPooling2D((2, 2), padding="same")(x)
+    x = layers.Conv2D(32, (3, 3), activation="relu", padding="same", name='Conv2D_2')(x)
+    x = layers.MaxPooling2D((2, 2), padding="same")(x)
 
     # Decoder
-    #x = layers.Conv2DTranspose(32, (5, 5), strides=2, activation="relu", padding="same", name='Conv2DT_1')(x)
-    #x = layers.Conv2DTranspose(32, (5, 5), strides=2, activation="relu", padding="same", name='Conv2DT_2')(x)
-    x = layers.Conv2D(1, (5, 5), activation="sigmoid", padding="same", name='Conv2D_out')(x)
+    x = layers.Conv2DTranspose(32, (3, 3), strides=2, activation="relu", padding="same", name='Conv2DT_1')(x)
+    x = layers.Conv2DTranspose(32, (3, 3), strides=2, activation="relu", padding="same", name='Conv2DT_2')(x)
+    x = layers.Conv2D(1, (3, 3), activation="sigmoid", padding="same", name='Conv2D_out')(x)
 
     # Autoencoder
     autoencoder = Model(input, x)
@@ -199,7 +199,7 @@ def main():
     autoencoder.fit(
     x=train_data,
     y=train_data,
-    epochs=30,
+    epochs=100,
     batch_size=128,
     shuffle=True,
     validation_data=(train_data, train_data)
@@ -210,7 +210,7 @@ def main():
     #display1(test_data, predictions)
 
     
-    
+    """
     #print(np.shape(filters))
     for i in range(32):
         filters, biases = autoencoder.get_layer(name=layer_name).get_weights()
@@ -232,31 +232,28 @@ def main():
 
         Y = float(np.square(np.subtract(img1,img2)).mean())
         print('MSE without filer ' + str(i) + ':', Y)
-    
-
     """
+
+    
     filters, biases = autoencoder.get_layer(name=layer_name).get_weights()
     # normalize filter values to 0-1 so we can visualize them
     f_min, f_max = filters.min(), filters.max()
     filters = (filters - f_min) / (f_max - f_min)
     # plot first few filters
-    n_filters, ix = 32, 1
+    n_filters, ix = 6, 1
     for i in range(n_filters):
         # get the filter
         f = filters[:, :, :, i]
-        # plot each channel separately
-        #for j in range(3):
         # specify subplot and turn of axis
         ax = plt.subplot(n_filters, 3, ix)
         ax.set_xticks([])
         ax.set_yticks([])
-        #plt.figure(figsize=(2, 2))
         # plot filter channel in grayscale
         plt.imshow(f[:, :, 0], cmap='gray')
         ix += 1
     # show the figure
-    #plt.savefig('images/small_shapes/two_lines/filters_10.png')
-    plt.show()
+    plt.savefig('less_filter_images/small_shapes/two_lines/filters_3.png')
+    #plt.show()
     plt.clf()
     
 
@@ -270,11 +267,11 @@ def main():
     feature_maps = model(img, training=False)
     # plot the output from each block
     square = 8
-    # plot all 32 outputs in an 8x8 squares
+    # plot all 8 outputs in an 8x8 squares
     ix = 1
     for _ in range(square):
         for _ in range(square):
-            if ix <= 32:
+            if ix <= n_filters:
                 # specify subplot and turn of axis
                 ax = plt.subplot(square, square, ix)
                 ax.set_xticks([])
@@ -283,8 +280,8 @@ def main():
                 plt.imshow(feature_maps[0, :, :, ix-1], cmap='gray') #[0, :, :, ix-1]
                 ix += 1
     # show the figure
-    #plt.savefig('images/small_shapes/two_lines/output_map_10.png')
-    plt.show()
+    plt.savefig('less_filter_images/small_shapes/two_lines/output_map_3.png')
+    #plt.show()
     plt.clf()
     
     
@@ -296,10 +293,9 @@ def main():
     # for the first 32 filters of our target layer
     all_imgs = []
     i = 0
-    for filter_index in range(32):
+    for filter_index in range(n_filters):
         print("Processing filter %d" % (filter_index,))
         loss, img = visualize_filter(filter_index, feature_extractor)
-        #print(img)
 
         w, h = 28, 28
         data = np.zeros((h, w, 1), dtype=np.uint8)
@@ -309,13 +305,13 @@ def main():
         divider = make_axes_locatable(ax)
         cax = divider.append_axes("right", size="5%", pad=0.05)
         plt.colorbar(im, cax=cax)
-        #plt.savefig('images/small_shapes/two_lines/activation_maps_10/' + str(i) + '.png')
-        plt.show()
+        plt.savefig('less_filter_images/small_shapes/two_lines/activation_maps_3/' + str(i) + '.png')
+        #plt.show()
         plt.clf()
 
 
         i += 1
         all_imgs.append(img)
-    """
+    
 
 main()
