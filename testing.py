@@ -166,6 +166,11 @@ def main():
     # won't use the labels.
     #(train_data, _), (test_data, _) = mnist.load_data()
     train_data = load_image_data('data/square.png')
+    train_data = np.array([[1, 1, 1, 1, 1], 
+                           [1, 0, 0, 0, 1], 
+                           [1, 0, 0, 0, 1], 
+                           [1, 0, 0, 0, 1], 
+                           [1, 1, 1, 1, 1]])
     test_data = train_data
 
     # Normalize and reshape the data
@@ -176,10 +181,10 @@ def main():
     # ADJUST THESE FOR DIFFERENT TESTS
     #n_filters = 3
     #filter_x, filter_y = 3, 3
-    for n_filters in range(3, 10):
+    for n_filters in range(1, 4):
         for f in [3, 5, 7, 10]:
             filter_x, filter_y = f, f
-            output_path = f'{n_filters}_filters/square/'
+            output_path = f'force_testing/{n_filters}_filters_/square/'
 
 
             if not os.path.exists(output_path):
@@ -205,7 +210,7 @@ def main():
             autoencoder.fit(
             x=train_data,
             y=train_data,
-            epochs=100,
+            epochs=10000,
             batch_size=128,
             shuffle=True,
             validation_data=(train_data, train_data)
