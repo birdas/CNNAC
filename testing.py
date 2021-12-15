@@ -13,8 +13,8 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from PIL import Image
 
 # The dimensions of our input image
-img_width = 28
-img_height = 28
+img_width = 5
+img_height = 5
 # Our target layer: we will visualize the filters from this layer.
 # See `model.summary()` for list of layer names, if you want to change this.
 layer_name = 'Conv2D_1'
@@ -166,11 +166,11 @@ def main():
     # won't use the labels.
     #(train_data, _), (test_data, _) = mnist.load_data()
     train_data = load_image_data('data/square.png')
-    train_data = np.array([[1, 1, 1, 1, 1], 
-                           [1, 0, 0, 0, 1], 
-                           [1, 0, 0, 0, 1], 
-                           [1, 0, 0, 0, 1], 
-                           [1, 1, 1, 1, 1]])
+    train_data = np.array([[[0, 0, 0, 0, 0], 
+                            [0, 0, 1, 0, 0], 
+                            [0, 0, 1, 0, 0], 
+                            [0, 0, 1, 0, 0], 
+                            [0, 0, 0, 0, 0]]])
     test_data = train_data
 
     # Normalize and reshape the data
@@ -181,10 +181,10 @@ def main():
     # ADJUST THESE FOR DIFFERENT TESTS
     #n_filters = 3
     #filter_x, filter_y = 3, 3
-    for n_filters in range(1, 4):
-        for f in [3, 5, 7, 10]:
+    for n_filters in range(1, 6):
+        for f in range(1, len(train_data[0]) + 1):
             filter_x, filter_y = f, f
-            output_path = f'force_testing/{n_filters}_filters_/square/'
+            output_path = f'force_testing/{n_filters}_filters_/line/'
 
 
             if not os.path.exists(output_path):
@@ -192,7 +192,7 @@ def main():
 
             #TODO How important is each kernel
             #Grab a filter and set it to zero? Then measure error delta?
-            input = layers.Input(shape=(28, 28, 1))
+            input = layers.Input(shape=(img_height, img_width, 1))
 
             # Encoder
             x = layers.Conv2D(n_filters, (filter_x, filter_y), activation="relu", padding="same", name='Conv2D_1')(input)
@@ -308,9 +308,8 @@ def main():
                 print("Processing filter %d" % (filter_index,))
                 loss, img = visualize_filter(filter_index, feature_extractor)
 
-                w, h = 28, 28
-                data = np.zeros((h, w, 1), dtype=np.uint8)
-                data[0:29, 0:29] = img
+                data = np.zeros((img_width, img_height, 1), dtype=np.uint8)
+                data[0:img_width + 1, 0:img_height + 1] = img
                 ax = plt.subplot()
                 im = ax.imshow(data, interpolation='nearest')
                 divider = make_axes_locatable(ax)
