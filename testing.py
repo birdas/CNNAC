@@ -181,10 +181,10 @@ def main():
     # ADJUST THESE FOR DIFFERENT TESTS
     #n_filters = 3
     #filter_x, filter_y = 3, 3
-    for n_filters in range(1, 6):
-        for f in range(1, len(train_data[0]) + 1):
+    for n_filters in range(1, 2):
+        for f in range(3, 4):
             filter_x, filter_y = f, f
-            output_path = f'force_testing/{n_filters}_filters_/line/'
+            output_path = f'force_testing_transpose1000_l1/{n_filters}_filters_/line/'
 
 
             if not os.path.exists(output_path):
@@ -195,10 +195,10 @@ def main():
             input = layers.Input(shape=(img_height, img_width, 1))
 
             # Encoder
-            x = layers.Conv2D(n_filters, (filter_x, filter_y), activation="relu", padding="same", name='Conv2D_1')(input)
+            x = layers.Conv2D(n_filters, (filter_x, filter_y), activation="relu", padding="same", name='Conv2D_1', activity_regularizer=keras.regularizers.l1(55e-5))(input)
 
             # Decoder
-            x = layers.Conv2DTranspose(n_filters, (filter_x, filter_y), strides=1, activation="relu", padding="same", name='Conv2DT_1')(x)
+            x = layers.Conv2DTranspose(n_filters, (filter_x, filter_y), strides=1, activation="relu", padding="same", name='Conv2DT_1', kernel_constraint=tf.keras.constraints.NonNeg())(x)
             x = layers.Conv2D(1, (filter_x, filter_y), activation="sigmoid", padding="same", name='Conv2D_out')(x)
 
             # Autoencoder
@@ -210,9 +210,9 @@ def main():
             autoencoder.fit(
             x=train_data,
             y=train_data,
-            epochs=10000,
-            batch_size=128,
-            shuffle=True,
+            epochs=1000,
+            batch_size=1,
+            shuffle=False,
             validation_data=(train_data, train_data)
             )
 
@@ -256,6 +256,7 @@ def main():
                 ax.set_yticks([])
                 # plot filter channel in grayscale
                 plt.imshow(f[:, :, 0], cmap='gray')
+                print(f[:, :, 0])
                 ix += 1
             # show the figure
             plt.savefig(output_path + 'filters_' + str(filter_x) + '.png')
@@ -265,7 +266,7 @@ def main():
 
 
             from numpy import expand_dims
-            model = Model(inputs=autoencoder.inputs, outputs=autoencoder.get_layer(name=layer_name).output)
+            model = Model(inputs=autoencoder.inputs, outputs=autoencoder.get_layer(name='Conv2D_1').output)
             # load the image with the required shape
             img = test_data[0]
             # expand dimensions so that it represents a single 'sample'
@@ -273,7 +274,7 @@ def main():
             # get feature map for first hidden layer
             feature_maps = model(img, training=False)
             # plot the output from each block
-            square = 8
+            square = 1
             # plot all 8 outputs in an 8x8 squares
             ix = 1
             for _ in range(square):
@@ -283,8 +284,13 @@ def main():
                         ax = plt.subplot(square, square, ix)
                         ax.set_xticks([])
                         ax.set_yticks([])
+                        #im = ax.imshow(feature_maps[0, :, :, ix-1], interpolation='nearest')
                         # plot filter channel in grayscale
+                        #divider = make_axes_locatable(ax)
+                        #cax = divider.append_axes("right", size="5%", pad=0.05)
+                        #plt.colorbar(im, cax=cax)
                         plt.imshow(feature_maps[0, :, :, ix-1], cmap='gray') #[0, :, :, ix-1]
+                        print(feature_maps[0, :, :, ix-1])
                         ix += 1
             # show the figure
             plt.savefig(output_path + 'output_map_' + str(filter_x) + '.png')
