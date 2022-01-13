@@ -160,6 +160,13 @@ def load_image_data(image_path):
     return x
 
 
+def coalesce(x):
+    #Using numpy will stop gradient computations, but do i need the gradients to be computed in the output layer?
+    print()
+    print(x)
+    return x
+
+
 def main():
 
     # Since we only need images from the dataset to encode and decode, we
@@ -181,7 +188,7 @@ def main():
     # ADJUST THESE FOR DIFFERENT TESTS
     #n_filters = 3
     #filter_x, filter_y = 3, 3
-    for n_filters in range(1, 2):
+    for n_filters in range(2, 3):
         for f in range(3, 4):
             filter_x, filter_y = f, f
             output_path = f'force_testing_transpose1000_l1/{n_filters}_filters_/line/'
@@ -195,11 +202,12 @@ def main():
             input = layers.Input(shape=(img_height, img_width, 1))
 
             # Encoder
-            x = layers.Conv2D(n_filters, (filter_x, filter_y), activation="relu", padding="same", name='Conv2D_1', activity_regularizer=keras.regularizers.l1(55e-5))(input)
+            x = layers.Conv2D(n_filters, (filter_x, filter_y), activation="sigmoid", padding="same", use_bias=False, name='Conv2D_1', activity_regularizer=keras.regularizers.l1(0))(input)
 
             # Decoder
-            x = layers.Conv2DTranspose(n_filters, (filter_x, filter_y), strides=1, activation="relu", padding="same", name='Conv2DT_1', kernel_constraint=tf.keras.constraints.NonNeg())(x)
-            x = layers.Conv2D(1, (filter_x, filter_y), activation="sigmoid", padding="same", name='Conv2D_out')(x)
+            x = layers.Conv2DTranspose(n_filters, (filter_x, filter_y), strides=1, activation="sigmoid", use_bias=False, padding="same", name='Conv2DT_1', kernel_constraint=tf.keras.constraints.NonNeg())(x)
+            x = layers.Lambda(coalesce)(x)
+
 
             # Autoencoder
             autoencoder = Model(input, x)
@@ -210,23 +218,27 @@ def main():
             autoencoder.fit(
             x=train_data,
             y=train_data,
-            epochs=1000,
+            epochs=1,
             batch_size=1,
             shuffle=False,
             validation_data=(train_data, train_data)
             )
 
 
-
+            #plt.imshow(train_data[0], cmap='gray')
+            #plt.show()
+            #plt.clf()
+            """
             Ys = []
             for i in range(n_filters):
-                filters, biases = autoencoder.get_layer(name=layer_name).get_weights()
+                filters = autoencoder.get_layer(name=layer_name).get_weights()
                 test_model = keras.models.clone_model(autoencoder)
-                test_filters = filters
+                test_filters = filters[0]
+                print(np.shape(test_filters))
                 test_filters[:, :, :, i] = np.reshape([0.0] * (filter_x * filter_y), (filter_x, filter_y, 1))
-                test_biases = biases
-                test_biases[i] = 0.0
-                test_model.get_layer(name=layer_name).set_weights([test_filters, test_biases])
+                #test_biases = biases
+                #test_biases[i] = 0.0
+                test_model.get_layer(name=layer_name).set_weights([test_filters])
 
                 img1 = autoencoder(test_data, training=False)
                 img2 = test_model(test_data, training=False)
@@ -241,8 +253,9 @@ def main():
 
 
 
-            filters, biases = autoencoder.get_layer(name=layer_name).get_weights()
+            filters = autoencoder.get_layer(name=layer_name).get_weights()
             # normalize filter values to 0-1 so we can visualize them
+            filters = filters[0]
             f_min, f_max = filters.min(), filters.max()
             filters = (filters - f_min) / (f_max - f_min)
             # plot first few filters
@@ -328,6 +341,6 @@ def main():
 
                 i += 1
                 all_imgs.append(img)
-            
+            """
 
 main()
