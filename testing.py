@@ -13,8 +13,8 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from PIL import Image
 
 # The dimensions of our input image
-img_width = 28
-img_height = 28
+img_width = 5
+img_height = 5
 # Our target layer: we will visualize the filters from this layer.
 # See `model.summary()` for list of layer names, if you want to change this.
 layer_name = 'Conv2D_1'
@@ -160,12 +160,26 @@ def load_image_data(image_path):
     return x
 
 
+def coalesce(x):
+    #Using numpy will stop gradient computations, but do i need the gradients to be computed in the output layer?
+    print(x)
+    y = tf.math.reduce_sum(x, tf.rank(x)-1)
+    print(y)
+    print()
+    return y
+
+
 def main():
 
     # Since we only need images from the dataset to encode and decode, we
     # won't use the labels.
     #(train_data, _), (test_data, _) = mnist.load_data()
     train_data = load_image_data('data/square.png')
+    train_data = np.array([[[0, 0, 0, 0, 0], 
+                            [0, 0, 1, 0, 0], 
+                            [0, 0, 1, 0, 0], 
+                            [0, 0, 1, 0, 0], 
+                            [0, 0, 0, 0, 0]]])
     test_data = train_data
 
     # Normalize and reshape the data
@@ -176,10 +190,10 @@ def main():
     # ADJUST THESE FOR DIFFERENT TESTS
     #n_filters = 3
     #filter_x, filter_y = 3, 3
-    for n_filters in range(3, 10):
-        for f in [3, 5, 7, 10]:
+    for n_filters in range(1, 2):
+        for f in range(3, 4):
             filter_x, filter_y = f, f
-            output_path = f'{n_filters}_filters/square/'
+            output_path = f'force_testing_transpose1000_l1/{n_filters}_filters_/line/'
 
 
             if not os.path.exists(output_path):
@@ -187,14 +201,15 @@ def main():
 
             #TODO How important is each kernel
             #Grab a filter and set it to zero? Then measure error delta?
-            input = layers.Input(shape=(28, 28, 1))
+            input = layers.Input(shape=(img_height, img_width, 1))
 
             # Encoder
-            x = layers.Conv2D(n_filters, (filter_x, filter_y), activation="relu", padding="same", name='Conv2D_1')(input)
+            x = layers.Conv2D(n_filters, (filter_x, filter_y), activation="sigmoid", padding="same", use_bias=False, name='Conv2D_1', activity_regularizer=keras.regularizers.l1(1e-5))(input)
 
             # Decoder
-            x = layers.Conv2DTranspose(n_filters, (filter_x, filter_y), strides=1, activation="relu", padding="same", name='Conv2DT_1')(x)
-            x = layers.Conv2D(1, (filter_x, filter_y), activation="sigmoid", padding="same", name='Conv2D_out')(x)
+            x = layers.Conv2DTranspose(n_filters, (filter_x, filter_y), strides=1, activation="sigmoid", use_bias=False, padding="same", name='Conv2DT_1', kernel_constraint=tf.keras.constraints.NonNeg())(x)
+            x = layers.Lambda(coalesce)(x)
+
 
             # Autoencoder
             autoencoder = Model(input, x)
@@ -205,30 +220,34 @@ def main():
             autoencoder.fit(
             x=train_data,
             y=train_data,
-            epochs=100,
-            batch_size=128,
-            shuffle=True,
+            epochs=1000,
+            batch_size=1,
+            shuffle=False,
             validation_data=(train_data, train_data)
             )
 
 
-
+            #plt.imshow(train_data[0], cmap='gray')
+            #plt.show()
+            #plt.clf()
+            
             Ys = []
             for i in range(n_filters):
-                filters, biases = autoencoder.get_layer(name=layer_name).get_weights()
+                filters = autoencoder.get_layer(name=layer_name).get_weights()
                 test_model = keras.models.clone_model(autoencoder)
-                test_filters = filters
+                test_filters = filters[0]
+                print(np.shape(test_filters))
                 test_filters[:, :, :, i] = np.reshape([0.0] * (filter_x * filter_y), (filter_x, filter_y, 1))
-                test_biases = biases
-                test_biases[i] = 0.0
-                test_model.get_layer(name=layer_name).set_weights([test_filters, test_biases])
+                #test_biases = biases
+                #test_biases[i] = 0.0
+                test_model.get_layer(name=layer_name).set_weights([test_filters])
 
                 img1 = autoencoder(test_data, training=False)
                 img2 = test_model(test_data, training=False)
 
                 Y = float(np.square(np.subtract(img1,img2)).mean())
                 Ys.append(Y)
-                print('MSE without filer ' + str(i) + ':', Y)
+                print('MSE without filter ' + str(i) + ':', Y)
 
             plt.bar([x for x in range(len(Ys))], Ys)
             plt.savefig(output_path + 'filter_importance_' + str(filter_x) + '.png')
@@ -236,8 +255,9 @@ def main():
 
 
 
-            filters, biases = autoencoder.get_layer(name=layer_name).get_weights()
+            filters = autoencoder.get_layer(name=layer_name).get_weights()
             # normalize filter values to 0-1 so we can visualize them
+            filters = filters[0]
             f_min, f_max = filters.min(), filters.max()
             filters = (filters - f_min) / (f_max - f_min)
             # plot first few filters
@@ -251,6 +271,7 @@ def main():
                 ax.set_yticks([])
                 # plot filter channel in grayscale
                 plt.imshow(f[:, :, 0], cmap='gray')
+                #print(f[:, :, 0])
                 ix += 1
             # show the figure
             plt.savefig(output_path + 'filters_' + str(filter_x) + '.png')
@@ -260,7 +281,7 @@ def main():
 
 
             from numpy import expand_dims
-            model = Model(inputs=autoencoder.inputs, outputs=autoencoder.get_layer(name=layer_name).output)
+            model = Model(inputs=autoencoder.inputs, outputs=autoencoder.get_layer(name='Conv2D_1').output)
             # load the image with the required shape
             img = test_data[0]
             # expand dimensions so that it represents a single 'sample'
@@ -268,7 +289,7 @@ def main():
             # get feature map for first hidden layer
             feature_maps = model(img, training=False)
             # plot the output from each block
-            square = 8
+            square = 1
             # plot all 8 outputs in an 8x8 squares
             ix = 1
             for _ in range(square):
@@ -278,8 +299,13 @@ def main():
                         ax = plt.subplot(square, square, ix)
                         ax.set_xticks([])
                         ax.set_yticks([])
+                        #im = ax.imshow(feature_maps[0, :, :, ix-1], interpolation='nearest')
                         # plot filter channel in grayscale
+                        #divider = make_axes_locatable(ax)
+                        #cax = divider.append_axes("right", size="5%", pad=0.05)
+                        #plt.colorbar(im, cax=cax)
                         plt.imshow(feature_maps[0, :, :, ix-1], cmap='gray') #[0, :, :, ix-1]
+                        print(feature_maps[0, :, :, ix-1])
                         ix += 1
             # show the figure
             plt.savefig(output_path + 'output_map_' + str(filter_x) + '.png')
@@ -303,9 +329,8 @@ def main():
                 print("Processing filter %d" % (filter_index,))
                 loss, img = visualize_filter(filter_index, feature_extractor)
 
-                w, h = 28, 28
-                data = np.zeros((h, w, 1), dtype=np.uint8)
-                data[0:29, 0:29] = img
+                data = np.zeros((img_width, img_height, 1), dtype=np.uint8)
+                data[0:img_width + 1, 0:img_height + 1] = img
                 ax = plt.subplot()
                 im = ax.imshow(data, interpolation='nearest')
                 divider = make_axes_locatable(ax)
