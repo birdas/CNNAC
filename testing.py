@@ -162,9 +162,11 @@ def load_image_data(image_path):
 
 def coalesce(x):
     #Using numpy will stop gradient computations, but do i need the gradients to be computed in the output layer?
-    print()
     print(x)
-    return x
+    y = tf.math.reduce_sum(x, tf.rank(x)-1)
+    print(y)
+    print()
+    return y
 
 
 def main():
@@ -188,7 +190,7 @@ def main():
     # ADJUST THESE FOR DIFFERENT TESTS
     #n_filters = 3
     #filter_x, filter_y = 3, 3
-    for n_filters in range(2, 3):
+    for n_filters in range(1, 2):
         for f in range(3, 4):
             filter_x, filter_y = f, f
             output_path = f'force_testing_transpose1000_l1/{n_filters}_filters_/line/'
@@ -202,7 +204,7 @@ def main():
             input = layers.Input(shape=(img_height, img_width, 1))
 
             # Encoder
-            x = layers.Conv2D(n_filters, (filter_x, filter_y), activation="sigmoid", padding="same", use_bias=False, name='Conv2D_1', activity_regularizer=keras.regularizers.l1(0))(input)
+            x = layers.Conv2D(n_filters, (filter_x, filter_y), activation="sigmoid", padding="same", use_bias=False, name='Conv2D_1', activity_regularizer=keras.regularizers.l1(1e-5))(input)
 
             # Decoder
             x = layers.Conv2DTranspose(n_filters, (filter_x, filter_y), strides=1, activation="sigmoid", use_bias=False, padding="same", name='Conv2DT_1', kernel_constraint=tf.keras.constraints.NonNeg())(x)
@@ -218,7 +220,7 @@ def main():
             autoencoder.fit(
             x=train_data,
             y=train_data,
-            epochs=1,
+            epochs=1000,
             batch_size=1,
             shuffle=False,
             validation_data=(train_data, train_data)
@@ -228,7 +230,7 @@ def main():
             #plt.imshow(train_data[0], cmap='gray')
             #plt.show()
             #plt.clf()
-            """
+            
             Ys = []
             for i in range(n_filters):
                 filters = autoencoder.get_layer(name=layer_name).get_weights()
@@ -245,7 +247,7 @@ def main():
 
                 Y = float(np.square(np.subtract(img1,img2)).mean())
                 Ys.append(Y)
-                print('MSE without filer ' + str(i) + ':', Y)
+                print('MSE without filter ' + str(i) + ':', Y)
 
             plt.bar([x for x in range(len(Ys))], Ys)
             plt.savefig(output_path + 'filter_importance_' + str(filter_x) + '.png')
@@ -269,7 +271,7 @@ def main():
                 ax.set_yticks([])
                 # plot filter channel in grayscale
                 plt.imshow(f[:, :, 0], cmap='gray')
-                print(f[:, :, 0])
+                #print(f[:, :, 0])
                 ix += 1
             # show the figure
             plt.savefig(output_path + 'filters_' + str(filter_x) + '.png')
@@ -341,6 +343,6 @@ def main():
 
                 i += 1
                 all_imgs.append(img)
-            """
+            
 
 main()
