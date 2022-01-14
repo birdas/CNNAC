@@ -17,7 +17,7 @@ img_width = 5
 img_height = 5
 # Our target layer: we will visualize the filters from this layer.
 # See `model.summary()` for list of layer names, if you want to change this.
-layer_name = 'Conv2D_1'
+layer_name = 'Conv2DT_1'
 
 def preprocess(array):
     """
@@ -162,10 +162,7 @@ def load_image_data(image_path):
 
 def coalesce(x):
     #Using numpy will stop gradient computations, but do i need the gradients to be computed in the output layer?
-    print(x)
     y = tf.math.reduce_sum(x, tf.rank(x)-1)
-    print(y)
-    print()
     return y
 
 
@@ -204,7 +201,7 @@ def main():
             input = layers.Input(shape=(img_height, img_width, 1))
 
             # Encoder
-            x = layers.Conv2D(n_filters, (filter_x, filter_y), activation="sigmoid", padding="same", use_bias=False, name='Conv2D_1', activity_regularizer=keras.regularizers.l1(1e-5))(input)
+            x = layers.Conv2D(n_filters, (filter_x, filter_y), activation="sigmoid", padding="same", use_bias=False, name='Conv2D_1', activity_regularizer=keras.regularizers.l1(0))(input)
 
             # Decoder
             x = layers.Conv2DTranspose(n_filters, (filter_x, filter_y), strides=1, activation="sigmoid", use_bias=False, padding="same", name='Conv2DT_1', kernel_constraint=tf.keras.constraints.NonNeg())(x)
@@ -271,7 +268,7 @@ def main():
                 ax.set_yticks([])
                 # plot filter channel in grayscale
                 plt.imshow(f[:, :, 0], cmap='gray')
-                #print(f[:, :, 0])
+                print(f[:, :, 0])
                 ix += 1
             # show the figure
             plt.savefig(output_path + 'filters_' + str(filter_x) + '.png')
