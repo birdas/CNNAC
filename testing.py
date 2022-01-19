@@ -201,10 +201,10 @@ def main():
             input = layers.Input(shape=(img_height, img_width, 1))
 
             # Encoder
-            x = layers.Conv2D(n_filters, (filter_x, filter_y), activation="sigmoid", padding="same", use_bias=False, name='Conv2D_1', activity_regularizer=keras.regularizers.l1(0.001))(input)
+            x = layers.Conv2D(n_filters, (filter_x, filter_y), activation="relu", padding="same", use_bias=False, name='Conv2D_1', activity_regularizer=keras.regularizers.l1(0.0001))(input)
 
             # Decoder
-            x = layers.Conv2DTranspose(n_filters, (filter_x, filter_y), activation="sigmoid", use_bias=False, padding="same", name='Conv2DT_1', kernel_constraint=tf.keras.constraints.NonNeg())(x)
+            x = layers.Conv2DTranspose(n_filters, (filter_x, filter_y), activation="relu", use_bias=False, padding="same", name='Conv2DT_1', kernel_constraint=tf.keras.constraints.NonNeg())(x)
             x = layers.Lambda(coalesce)(x)
 
 
@@ -217,7 +217,7 @@ def main():
             autoencoder.fit(
             x=train_data,
             y=train_data,
-            epochs=300,
+            epochs=1000,
             batch_size=1,
             shuffle=False,
             validation_data=(train_data, train_data)
