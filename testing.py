@@ -190,7 +190,7 @@ def main():
     for n_filters in range(1, 2):
         for f in range(3, 4):
             filter_x, filter_y = f, f
-            output_path = f'force_testing_transpose1000_l1/{n_filters}_filters_/line/'
+            output_path = f'recent_testing/line/{n_filters}_filters_/line/'
 
 
             if not os.path.exists(output_path):
