@@ -184,7 +184,7 @@ def main():
                         [0, 0, 0, 0, 0]]])
 
     # Normalize and reshape the data
-    x_data = preprocess(x_data)
+    # x_data = preprocess(x_data)
 
 
     # ADJUST THESE FOR DIFFERENT TESTS
@@ -213,6 +213,8 @@ def main():
     autoencoder.compile(optimizer="adam", loss="mse")
     autoencoder.summary()
 
+    callback = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=20)
+
 
     autoencoder.fit(
     x=x_data,
@@ -220,7 +222,8 @@ def main():
     epochs=10000,
     batch_size=1,
     shuffle=False,
-    validation_data=(x_data, y_data)
+    validation_data=(x_data, y_data),
+    callbacks=[callback]
     )
 
 
