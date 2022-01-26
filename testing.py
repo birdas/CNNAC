@@ -170,176 +170,177 @@ def main():
 
     # Since we only need images from the dataset to encode and decode, we
     # won't use the labels.
-    #(train_data, _), (test_data, _) = mnist.load_data()
-    train_data = load_image_data('data/square.png')
-    train_data = np.array([[[0, 0, 0, 0, 0], 
-                            [0, 0, 1, 0, 0], 
-                            [0, 0, 1, 0, 0], 
-                            [0, 0, 1, 0, 0], 
-                            [0, 0, 0, 0, 0]]])
-    test_data = train_data
+    
+    x_data = np.array([[[0, 0, 0, 0, 0], 
+                        [0, 0, 1, 0, 0], 
+                        [0, 0, 1, 0, 0], 
+                        [0, 0, 1, 0, 0], 
+                        [0, 0, 0, 0, 0]]])
+
+    y_data = np.array([[[0, 0, 0, 0, 0], 
+                        [0, 0, 0, 0, 0], 
+                        [0, 0, 1, 0, 0], 
+                        [0, 0, 0, 0, 0], 
+                        [0, 0, 0, 0, 0]]])
 
     # Normalize and reshape the data
-    train_data = preprocess(train_data)
-    test_data = preprocess(test_data)
+    x_data = preprocess(x_data)
 
 
     # ADJUST THESE FOR DIFFERENT TESTS
-    #n_filters = 3
-    #filter_x, filter_y = 3, 3
-    for n_filters in range(1, 2):
-        for f in range(3, 4):
-            filter_x, filter_y = f, f
-            output_path = f'recent_testing/line/{n_filters}_filters_/line/'
+    n_filters = 1
+    filter_x, filter_y = 3, 3
+    output_path = f'recent_testing/line/{n_filters}_filters_/line/'
 
 
-            if not os.path.exists(output_path):
-                os.makedirs(output_path)
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
 
-            #TODO How important is each kernel
-            #Grab a filter and set it to zero? Then measure error delta?
-            input = layers.Input(shape=(img_height, img_width, 1))
+    #TODO How important is each kernel
+    #Grab a filter and set it to zero? Then measure error delta?
+    input = layers.Input(shape=(img_height, img_width, 1))
 
-            # Encoder
-            x = layers.Conv2D(n_filters, (filter_x, filter_y), activation="relu", padding="same", use_bias=False, name='Conv2D_1', activity_regularizer=keras.regularizers.l1(0.0001))(input)
+    # Encoder
+    x = layers.Conv2D(n_filters, (filter_x, filter_y), activation="relu", padding="same", use_bias=False, name='Conv2D_1', activity_regularizer=keras.regularizers.l1(0.0001))(input)
 
-            # Decoder
-            x = layers.Conv2DTranspose(n_filters, (filter_x, filter_y), activation="relu", use_bias=False, padding="same", name='Conv2DT_1', kernel_constraint=tf.keras.constraints.NonNeg())(x)
-            x = layers.Lambda(coalesce)(x)
-
-
-            # Autoencoder
-            autoencoder = Model(input, x)
-            autoencoder.compile(optimizer="adam", loss="mse")
-            autoencoder.summary()
+    # Decoder
+    # x = layers.Conv2DTranspose(n_filters, (filter_x, filter_y), activation="relu", use_bias=False, padding="same", name='Conv2DT_1', kernel_constraint=tf.keras.constraints.NonNeg())(x)
+    # x = layers.Lambda(coalesce)(x)
 
 
-            autoencoder.fit(
-            x=train_data,
-            y=train_data,
-            epochs=1000,
-            batch_size=1,
-            shuffle=False,
-            validation_data=(train_data, train_data)
-            )
+    # Autoencoder
+    autoencoder = Model(input, x)
+    autoencoder.compile(optimizer="adam", loss="mse")
+    autoencoder.summary()
 
 
-            #plt.imshow(train_data[0], cmap='gray')
-            #plt.show()
-            #plt.clf()
-            
-            Ys = []
-            for i in range(n_filters):
-                filters = autoencoder.get_layer(name=layer_name).get_weights()
-                test_model = keras.models.clone_model(autoencoder)
-                test_filters = filters[0]
-                print(np.shape(test_filters))
-                test_filters[:, :, :, i] = np.reshape([0.0] * (filter_x * filter_y), (filter_x, filter_y, 1))
-                #test_biases = biases
-                #test_biases[i] = 0.0
-                test_model.get_layer(name=layer_name).set_weights([test_filters])
+    autoencoder.fit(
+    x=x_data,
+    y=y_data,
+    epochs=10000,
+    batch_size=1,
+    shuffle=False,
+    validation_data=(x_data, y_data)
+    )
 
-                img1 = autoencoder(test_data, training=False)
-                img2 = test_model(test_data, training=False)
 
-                Y = float(np.square(np.subtract(img1,img2)).mean())
-                Ys.append(Y)
-                print('MSE without filter ' + str(i) + ':', Y)
+    #plt.imshow(train_data[0], cmap='gray')
+    #plt.show()
+    #plt.clf()
+    
+    Ys = []
+    """
+    for i in range(n_filters):
+        filters = autoencoder.get_layer(name=layer_name).get_weights()
+        test_model = keras.models.clone_model(autoencoder)
+        test_filters = filters[0]
+        print(np.shape(test_filters))
+        test_filters[:, :, :, i] = np.reshape([0.0] * (filter_x * filter_y), (filter_x, filter_y, 1))
+        #test_biases = biases
+        #test_biases[i] = 0.0
+        test_model.get_layer(name=layer_name).set_weights([test_filters])
 
-            plt.bar([x for x in range(len(Ys))], Ys)
-            plt.savefig(output_path + 'filter_importance_' + str(filter_x) + '.png')
-            plt.clf()
+        img1 = autoencoder(test_data, training=False)
+        img2 = test_model(test_data, training=False)
+
+        Y = float(np.square(np.subtract(img1,img2)).mean())
+        Ys.append(Y)
+        print('MSE without filter ' + str(i) + ':', Y)
+
+    plt.bar([x for x in range(len(Ys))], Ys)
+    plt.savefig(output_path + 'filter_importance_' + str(filter_x) + '.png')
+    plt.clf()
 
 
 
-            filters = autoencoder.get_layer(name=layer_name).get_weights()
-            # normalize filter values to 0-1 so we can visualize them
-            filters = filters[0]
-            f_min, f_max = filters.min(), filters.max()
-            filters = (filters - f_min) / (f_max - f_min)
-            # plot first few filters
-            ix = 1
-            for i in range(n_filters):
-                # get the filter
-                f = filters[:, :, :, i]
+    filters = autoencoder.get_layer(name=layer_name).get_weights()
+    # normalize filter values to 0-1 so we can visualize them
+    filters = filters[0]
+    f_min, f_max = filters.min(), filters.max()
+    filters = (filters - f_min) / (f_max - f_min)
+    # plot first few filters
+    ix = 1
+    for i in range(n_filters):
+        # get the filter
+        f = filters[:, :, :, i]
+        # specify subplot and turn of axis
+        ax = plt.subplot(n_filters, 3, ix)
+        ax.set_xticks([])
+        ax.set_yticks([])
+        # plot filter channel in grayscale
+        plt.imshow(f[:, :, 0], cmap='gray')
+        print(f[:, :, 0])
+        ix += 1
+    # show the figure
+    plt.savefig(output_path + 'filters_' + str(filter_x) + '.png')
+    #plt.show()
+    plt.clf()
+    
+
+
+    from numpy import expand_dims
+    model = Model(inputs=autoencoder.inputs, outputs=autoencoder.get_layer(name='Conv2D_1').output)
+    # load the image with the required shape
+    img = test_data[0]
+    # expand dimensions so that it represents a single 'sample'
+    img = expand_dims(img, axis=0)
+    # get feature map for first hidden layer
+    feature_maps = model(img, training=False)
+    # plot the output from each block
+    square = 1
+    # plot all 8 outputs in an 8x8 squares
+    ix = 1
+    for _ in range(square):
+        for _ in range(square):
+            if ix <= n_filters:
                 # specify subplot and turn of axis
-                ax = plt.subplot(n_filters, 3, ix)
+                ax = plt.subplot(square, square, ix)
                 ax.set_xticks([])
                 ax.set_yticks([])
+                #im = ax.imshow(feature_maps[0, :, :, ix-1], interpolation='nearest')
                 # plot filter channel in grayscale
-                plt.imshow(f[:, :, 0], cmap='gray')
-                print(f[:, :, 0])
+                #divider = make_axes_locatable(ax)
+                #cax = divider.append_axes("right", size="5%", pad=0.05)
+                #plt.colorbar(im, cax=cax)
+                plt.imshow(feature_maps[0, :, :, ix-1], cmap='gray') #[0, :, :, ix-1]
+                print(feature_maps[0, :, :, ix-1])
                 ix += 1
-            # show the figure
-            plt.savefig(output_path + 'filters_' + str(filter_x) + '.png')
-            #plt.show()
-            plt.clf()
-            
+    # show the figure
+    plt.savefig(output_path + 'output_map_' + str(filter_x) + '.png')
+    #plt.show()
+    plt.clf()
+    
+
+    
+    layer = autoencoder.get_layer(name=layer_name)
+    feature_extractor = Model(inputs=autoencoder.inputs, outputs=layer.output)
+
+    activation_path = output_path + 'activation_maps_' + str(filter_x) + '/'
+    if not os.path.exists(activation_path):
+        os.makedirs(activation_path)
+
+    # Compute image inputs that maximize per-filter activations
+    # for the first n_filter filters of our target layer
+    all_imgs = []
+    i = 0
+    for filter_index in range(n_filters):
+        print("Processing filter %d" % (filter_index,))
+        loss, img = visualize_filter(filter_index, feature_extractor)
+
+        data = np.zeros((img_width, img_height, 1), dtype=np.uint8)
+        data[0:img_width + 1, 0:img_height + 1] = img
+        ax = plt.subplot()
+        im = ax.imshow(data, interpolation='nearest')
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        plt.colorbar(im, cax=cax)
+        plt.savefig(activation_path + str(i) + '.png')
+        #plt.show()
+        plt.clf()
 
 
-            from numpy import expand_dims
-            model = Model(inputs=autoencoder.inputs, outputs=autoencoder.get_layer(name='Conv2D_1').output)
-            # load the image with the required shape
-            img = test_data[0]
-            # expand dimensions so that it represents a single 'sample'
-            img = expand_dims(img, axis=0)
-            # get feature map for first hidden layer
-            feature_maps = model(img, training=False)
-            # plot the output from each block
-            square = 1
-            # plot all 8 outputs in an 8x8 squares
-            ix = 1
-            for _ in range(square):
-                for _ in range(square):
-                    if ix <= n_filters:
-                        # specify subplot and turn of axis
-                        ax = plt.subplot(square, square, ix)
-                        ax.set_xticks([])
-                        ax.set_yticks([])
-                        #im = ax.imshow(feature_maps[0, :, :, ix-1], interpolation='nearest')
-                        # plot filter channel in grayscale
-                        #divider = make_axes_locatable(ax)
-                        #cax = divider.append_axes("right", size="5%", pad=0.05)
-                        #plt.colorbar(im, cax=cax)
-                        plt.imshow(feature_maps[0, :, :, ix-1], cmap='gray') #[0, :, :, ix-1]
-                        print(feature_maps[0, :, :, ix-1])
-                        ix += 1
-            # show the figure
-            plt.savefig(output_path + 'output_map_' + str(filter_x) + '.png')
-            #plt.show()
-            plt.clf()
-            
-
-            
-            layer = autoencoder.get_layer(name=layer_name)
-            feature_extractor = Model(inputs=autoencoder.inputs, outputs=layer.output)
-
-            activation_path = output_path + 'activation_maps_' + str(filter_x) + '/'
-            if not os.path.exists(activation_path):
-                os.makedirs(activation_path)
-
-            # Compute image inputs that maximize per-filter activations
-            # for the first n_filter filters of our target layer
-            all_imgs = []
-            i = 0
-            for filter_index in range(n_filters):
-                print("Processing filter %d" % (filter_index,))
-                loss, img = visualize_filter(filter_index, feature_extractor)
-
-                data = np.zeros((img_width, img_height, 1), dtype=np.uint8)
-                data[0:img_width + 1, 0:img_height + 1] = img
-                ax = plt.subplot()
-                im = ax.imshow(data, interpolation='nearest')
-                divider = make_axes_locatable(ax)
-                cax = divider.append_axes("right", size="5%", pad=0.05)
-                plt.colorbar(im, cax=cax)
-                plt.savefig(activation_path + str(i) + '.png')
-                #plt.show()
-                plt.clf()
-
-
-                i += 1
-                all_imgs.append(img)
-            
+        i += 1
+        all_imgs.append(img)
+    """
 
 main()
