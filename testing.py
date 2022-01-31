@@ -177,6 +177,7 @@ def main():
                         [0, 0, 1, 0, 0], 
                         [0, 0, 0, 0, 0]]])
 
+
     y_data = np.array([[[0, 0, 0, 0, 0], 
                         [0, 0, 0, 0, 0], 
                         [0, 0, 1, 0, 0], 
@@ -184,12 +185,12 @@ def main():
                         [0, 0, 0, 0, 0]]])
 
     # Normalize and reshape the data
-    # x_data = preprocess(x_data)
+    x_data = preprocess(x_data)
 
 
     # ADJUST THESE FOR DIFFERENT TESTS
     n_filters = 1
-    filter_x, filter_y = 3, 3
+    filter_x, filter_y = 5, 5
     output_path = f'recent_testing/line/{n_filters}_filters_/line/'
 
 
@@ -201,10 +202,10 @@ def main():
     input = layers.Input(shape=(img_height, img_width, 1))
 
     # Encoder
-    x = layers.Conv2D(n_filters, (filter_x, filter_y), activation="relu", padding="same", use_bias=False, name='Conv2D_1', activity_regularizer=keras.regularizers.l1(0.0001))(input)
+    x = layers.Conv2D(n_filters, (filter_x, filter_y), strides=(1, 1), activation="sigmoid", padding="same", use_bias=False, name='Conv2D_1', activity_regularizer=tf.keras.regularizers.l1(0))(input)
 
     # Decoder
-    # x = layers.Conv2DTranspose(n_filters, (filter_x, filter_y), activation="relu", use_bias=False, padding="same", name='Conv2DT_1', kernel_constraint=tf.keras.constraints.NonNeg())(x)
+    #x = layers.Conv2DTranspose(1, (filter_x, filter_y), strides=(1, 1), activation="relu", use_bias=False, padding="same", name='Conv2DT_1', kernel_constraint=tf.keras.constraints.NonNeg())(x)
     # x = layers.Lambda(coalesce)(x)
 
 
@@ -218,11 +219,11 @@ def main():
 
     autoencoder.fit(
     x=x_data,
-    y=y_data,
-    epochs=10000,
+    y=x_data,
+    epochs=100000,
     batch_size=1,
     shuffle=False,
-    validation_data=(x_data, y_data),
+    validation_data=(x_data, x_data),
     callbacks=[callback]
     )
 
