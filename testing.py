@@ -14,34 +14,21 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from PIL import Image
 
 # The dimensions of our input image
-img_width = 63
-img_height = 63
-n_filters = 6
+img_width = 9
+img_height = 9
+n_filters = 2
 # Our target layer: we will visualize the filters from this layer.
 # See `model.summary()` for list of layer names, if you want to change this.
 layer_name = 'Conv2DT_1'
 
-def preprocess(array, isX):
+def preprocess(array, isY):
     """
     Normalizes the supplied array and reshapes it into the appropriate format.
     """
-
+    array = np.array(array)
     #array = array.astype("float32") / 255.0
-    array = np.reshape(array, (len(array), img_height, img_width, 1)) if isX else np.reshape(array, (1, img_height, img_width, n_filters))
+    array = np.reshape(array, (len(array), img_height, img_width, 1)) if isY else np.reshape(array, (1, img_height, img_width, n_filters))
     return array
-
-
-def noise(array):
-    """
-    Adds random noise to each image in the supplied array.
-    """
-
-    noise_factor = 0.4
-    noisy_array = array + noise_factor * np.random.normal(
-        loc=0.0, scale=1.0, size=array.shape
-    )
-
-    return np.clip(noisy_array, 0.0, 1.0)
 
 
 def display1(array1, array2):
@@ -154,16 +141,23 @@ def load_image_data(image_path):
     Load the raw image data into a data matrix and target vector.
     """
     x = []
+
     im = np.array(load_img(image_path))
+    for i in range(len(im[0])):
+        for j in range(len(im[0][i])):
+            if im[0][i][j] != 255:
+                im[0][i][j] = 0
+
     im = tf.image.resize(im, size=(img_height, img_width)).numpy()
     im = tf.image.rgb_to_grayscale(im)
+
     x.append(im)
     x = np.array(x)
     return x
 
 
 def coalesce(x):
-    #Using numpy will stop gradient computations, but do i need the gradients to be computed in the output layer?
+    #Using numpy will stop gradient tape computations, but do i need the gradients to be computed in the output layer?
     y = tf.math.reduce_sum(x, tf.rank(x)-1)
     return y
 
@@ -172,53 +166,89 @@ def main():
 
     # Since we only need images from the dataset to encode and decode, we
     # won't use the labels.
-    """
     
-    y_data = np.array([[[0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
-                        [0, 1, 0, 0, 0, 0, 0, 0, 0, 0], 
-                        [0, 1, 0, 0, 0, 0, 0, 0, 0, 0], 
-                        [0, 1, 0, 0, 0, 0, 0, 0, 0, 0], 
-                        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]])
-
-
-    x_data = np.array([[[0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
-                        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
-                        [0, 1, 0, 0, 0, 0, 0, 0, 0, 0], 
-                        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
-                        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]])
-
     """
-    x_data = []
+    y = np.array([[[0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+                   [0, 1, 0, 0, 0, 0, 0, 0, 0, 0], 
+                   [0, 1, 0, 0, 0, 1, 1, 1, 0, 0], 
+                   [0, 1, 0, 0, 0, 0, 0, 0, 0, 0], 
+                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]])
 
-    # Load data
-    for filename in os.listdir('maclean_data/layers'):
-        f = os.path.join('maclean_data/layers', filename)
-        x_data.append(load_image_data(f))
+    y = np.transpose(y)
 
-    y_data = []
-    for _ in range(6):
-        y_data.append(load_image_data('maclean_data/floorplanandsuch/floor_plan.png'))
+    x1 = np.array([[[0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+                    [0, 1, 0, 0, 0, 0, 0, 0, 0, 0], 
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]])
 
+    x2 = np.array([[[0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+                    [0, 0, 0, 0, 0, 0, 1, 0, 0, 0], 
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]])
+    """
+
+    y = np.array([[[0, 0, 0, 0, 0, 0, 0, 0, 0], 
+                   [0, 1, 0, 0, 0, 0, 0, 0, 0], 
+                   [0, 1, 0, 0, 0, 1, 1, 1, 0], 
+                   [0, 1, 0, 0, 0, 0, 0, 0, 0], 
+                   [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                   [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                   [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                   [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                   [0, 0, 0, 0, 0, 0, 0, 0, 0]]])
+
+    y = np.transpose(y)
+
+    x1 = np.array([[[0, 0, 0, 0, 0, 0, 0, 0, 0], 
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0], 
+                    [0, 1, 0, 0, 0, 0, 0, 0, 0], 
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0], 
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0]]])
+
+    x2 = np.array([[[0, 0, 0, 0, 0, 0, 0, 0, 0], 
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0], 
+                    [0, 0, 0, 0, 0, 0, 1, 0, 0], 
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0], 
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0]]])
+
+    
+
+    x_data = [x1, x2]
+
+    y_data = [y]
 
 
     # Normalize and reshape the data
-    x_data = preprocess(x_data, True)
-    y_data = preprocess(y_data, False)
-
-    #print(x_data.shape)
+    x_data = preprocess(x_data, False)
+    y_data = preprocess(y_data, True)
+    
 
     # ADJUST THESE FOR DIFFERENT TESTS
-    
     filter_x, filter_y = 3, 3
     output_path = f'recent_testing/line/{n_filters}_filters_/line/'
 
@@ -227,8 +257,6 @@ def main():
         os.makedirs(output_path)
 
 
-    #TODO How important is each kernel
-    #Grab a filter and set it to zero? Then measure error delta?
     input = layers.Input(shape=(img_height, img_width, n_filters))
 
     # Encoder
@@ -236,7 +264,6 @@ def main():
 
     # Decoder
     x = layers.Conv2DTranspose(1, (filter_x, filter_y), input_shape=(img_height, img_width, n_filters), strides=(1, 1), activation="linear", use_bias=False, padding="same", name='Conv2DT_1')(input)
-    # x = layers.Lambda(coalesce)(x)
 
 
     # Autoencoder
