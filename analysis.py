@@ -87,8 +87,27 @@ def mse(array1, array2):
     return mse
 
 
-def brute_solve():
-    pass
+def brute_solve(fplan, feature_size, amount):
+    feats = scan(fplan, feature_size)
+    common_feats = most_common(seen_features=feats, feature_size=feature_size, ret=True, amount=amount)
+
+    solved = np.zeros((len(fplan), len(fplan[0])))
+
+    for i in range(0, len(fplan) - feature_size[0] + 1, feature_size[0]):
+        for j in range(0, len(fplan[i]) - feature_size[1] + 1, feature_size[1]):
+            min_mse = mse(fplan, solved)
+            min_feat = np.zeros(feature_size)
+            for f in common_feats:
+                solved[i:i+feature_size[0],j:j+feature_size[1]] = f
+                new_mse = mse(fplan, solved)
+                if new_mse < min_mse:
+                    min_mse = new_mse
+                    min_feat = f
+            solved[i:i+feature_size[0],j:j+feature_size[1]] = min_feat
+    
+    print(mse(fplan, solved))
+            
+
 
 
 
@@ -116,7 +135,8 @@ for s in os.listdir('phillip_data/imgs_with_intermediate/'):
             # pyplot.imshow(data)
             # pyplot.show()
             feature_size = (3, 3)
-            feats = scan(data, feature_size)
-            mc_feats = most_common(seen_features=feats, feature_size=feature_size, ret=True)
+            # feats = scan(data, feature_size)
+            # mc_feats = most_common(seen_features=feats, feature_size=feature_size, ret=True)
             # print(find_all(data, [mc_feats[-1]], feature_size))
+            brute_solve(data, feature_size, 1)
             break
