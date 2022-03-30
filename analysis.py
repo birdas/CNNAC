@@ -80,6 +80,15 @@ def find_all(fplan, feats, feature_size):
     return locs
 
 
+def mse(array1, array2):
+    difference_array = np.subtract(array1, array2)
+    squared_array = np.square(difference_array)
+    mse = squared_array.mean()
+    return mse
+
+
+def brute_solve():
+    pass
 
 
 
